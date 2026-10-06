@@ -1,0 +1,17 @@
+# secrets
+.env
+
+# database data folders from Docker volumes
+pgdata/
+mongo-data/
+
+# large generated files
+*.dump
+*.csv.gz
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+
+# the packaged submission
+*.zip
