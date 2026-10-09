@@ -1,0 +1,284 @@
+<?xml version="1.0" ?>
+<mxfile host="drawio" agent="generated for MIT 8103 Portfolio 1">
+  <diagram id="proclus-erd" name="Proclus ERD">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1300" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="customers" value="customers" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="610" y="90" width="370" height="246" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;customer_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;first_name&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(50)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;last_name&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(50)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;UQ&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;email&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(254)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;UQ&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;phone_number&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(14)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_5" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;date_of_birth&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;DATE&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="150" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_6" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;kyc_tier&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;SMALLINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="174" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_7" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;status&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="198" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="customers_8" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;created_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="customers">
+          <mxGeometry x="0" y="222" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents" value="kyc_documents" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="370" height="246" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;document_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;customer_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;U1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;document_type&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(20)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;U1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;document_number&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(20)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;expiry_date&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;DATE &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_5" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;status&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="150" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_6" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;submitted_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="174" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_7" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;reviewed_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="198" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="kyc_documents_8" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;reviewed_by&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(50) &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="kyc_documents">
+          <mxGeometry x="0" y="222" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="beneficiaries" value="beneficiaries" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="138" width="370" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="beneficiaries_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;beneficiary_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="beneficiaries">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="beneficiaries_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK U1 U2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;customer_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="beneficiaries">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="beneficiaries_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK U1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;wallet_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="beneficiaries">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="beneficiaries_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;U2&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;nickname&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(50)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="beneficiaries">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="beneficiaries_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;created_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="beneficiaries">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets" value="wallets" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="610" y="420" width="370" height="198" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;wallet_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="wallets">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK U1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;customer_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="wallets">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;UQ&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;wallet_number&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;CHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="wallets">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;U1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;wallet_type&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="wallets">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;balance  (stored, derived)&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;NUMERIC(14,2)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="wallets">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets_5" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;status&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="wallets">
+          <mxGeometry x="0" y="150" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="wallets_6" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;created_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="wallets">
+          <mxGeometry x="0" y="174" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log" value="audit_log" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#f5f5f5;strokeColor=#666666;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="420" width="370" height="222" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;audit_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;entity_type&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(20)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;entity_id  (no FK)&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;action&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(30)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;actor_type&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_5" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;actor_ref&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(50)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="150" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_6" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;details&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(255) &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="174" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_log_7" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;created_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit_log">
+          <mxGeometry x="0" y="198" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants" value="merchants" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="756" width="370" height="198" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;merchant_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="merchants">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;business_name&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(100)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="merchants">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;UQ&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;cac_number&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="merchants">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;category&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(20)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="merchants">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;UQ&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;email&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(254)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="merchants">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants_5" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;status&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="merchants">
+          <mxGeometry x="0" y="150" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="merchants_6" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;created_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="merchants">
+          <mxGeometry x="0" y="174" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions" value="transactions" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="610" y="720" width="370" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;transaction_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;UQ&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;reference&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(20)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;wallet_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;U1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;transaction_type&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(20)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;amount&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;NUMERIC(14,2)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_5" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;status&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="150" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_6" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK U1&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;transfer_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="174" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_7" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;merchant_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="198" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_8" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;narration&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(100) &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="222" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transactions_9" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;created_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactions">
+          <mxGeometry x="0" y="246" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers" value="transfers" style="swimlane;fontStyle=1;fontSize=14;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="720" width="370" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_0" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;PK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;&lt;b&gt;transfer_id&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="30" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_1" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;UQ&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;reference&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(20)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="54" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_2" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;sender_wallet_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="78" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_3" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;FK&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;receiver_wallet_id&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;BIGINT&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="102" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_4" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;amount&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;NUMERIC(14,2)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="126" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_5" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;narration&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(100) &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="150" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_6" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;status&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(10)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="174" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_7" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;failure_reason&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;VARCHAR(200) &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="198" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_8" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;created_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="222" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="transfers_9" value="&lt;table style=&quot;width:358px;border-collapse:collapse;font-size:12px&quot;&gt;&lt;tr&gt;&lt;td style=&quot;width:64px;color:#6c8ebf&quot;&gt;&lt;b&gt;&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;width:180px&quot;&gt;processed_at&lt;/td&gt;&lt;td style=&quot;text-align:left&quot;&gt;TIMESTAMPTZ &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=6;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transfers">
+          <mxGeometry x="0" y="246" width="370" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1" value="submits&lt;br&gt;CASCADE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="customers" target="kyc_documents">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" value="saves&lt;br&gt;CASCADE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="customers" target="beneficiaries">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" value="owns (main + optional savings)&lt;br&gt;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="customers" target="wallets">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="is saved as&lt;br&gt;CASCADE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="wallets" target="beneficiaries">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" value="receives&lt;br&gt;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.55;exitDx=0;exitDy=0;entryX=0.72;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="wallets" target="transfers">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" value="sends&lt;br&gt;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.85;exitDx=0;exitDy=0;entryX=0.32;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="wallets" target="transfers">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" value="has ledger rows&lt;br&gt;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERmandOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="wallets" target="transactions">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="has legs (0 to 3)&lt;br&gt;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="transfers" target="transactions">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" value="is paid by&lt;br&gt;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;endArrow=ERzeroToMany;startFill=0;endFill=0;startSize=12;endSize=12;strokeWidth=1.3;fontSize=11;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="merchants" target="transactions">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="title" value="&lt;b&gt;Proclus wallet database&lt;/b&gt;: entity-relationship diagram (crow's-foot notation), PostgreSQL 18, built by sql/01_schema.sql" style="text;html=1;align=left;verticalAlign=middle;fontSize=16;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="1100" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="audit_note" value="No foreign keys by design: entity_id points at a different table per entity_type, and audit rows must outlive the rows they describe." style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#666666;whiteSpace=wrap;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="648" width="370" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;b&gt;PK&lt;/b&gt; primary key &amp;nbsp; &lt;b&gt;FK&lt;/b&gt; foreign key &amp;nbsp; &lt;b&gt;UQ&lt;/b&gt; single-column UNIQUE (candidate key) &amp;nbsp; &lt;b&gt;U1, U2&lt;/b&gt; columns of a composite UNIQUE candidate key in that table &amp;nbsp; &lt;font color=&quot;#999999&quot;&gt;null&lt;/font&gt; nullable column, all others NOT NULL&lt;br&gt;Crow's foot at the child end: &lt;b&gt;o&amp;lt;&lt;/b&gt; zero or many. At the parent end: &lt;b&gt;||&lt;/b&gt; exactly one (mandatory FK), &lt;b&gt;o|&lt;/b&gt; zero or one (nullable FK). Edge labels give the relationship and its ON DELETE rule.&lt;br&gt;wallets.balance is a deliberate denormalisation: it equals completed credits minus completed debits in transactions. Money is NUMERIC(14,2), times are TIMESTAMPTZ, status columns are CHECK-constrained sets." style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fontSize=12;fillColor=#fafafa;strokeColor=#bbbbbb;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1030" width="1510" height="92" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
