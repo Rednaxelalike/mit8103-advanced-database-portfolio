@@ -1,0 +1,56 @@
+-- Captured 2026-10-09 16:22 +0100 on PostgreSQL 18.6, database proclus
+-- Command: psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-1-database-design/sql/03_constraint_tests.sql
+
+CREATE FUNCTION
+ test |                                     rule                                      |          expected          |                                                               database_message                                                               
+------+-------------------------------------------------------------------------------+----------------------------+----------------------------------------------------------------------------------------------------------------------------------------------
+ T01  | A wallet balance can never go below zero (overdraft)                          | check_violation            | new row for relation "wallets" violates check constraint "wallets_balance_non_negative"
+ T02  | A ledger amount must be greater than zero                                     | check_violation            | new row for relation "transactions" violates check constraint "transactions_amount_positive"
+ T03  | A transfer amount must be greater than zero                                   | check_violation            | new row for relation "transfers" violates check constraint "transfers_amount_positive"
+ T04  | A wallet cannot transfer to itself                                            | check_violation            | new row for relation "transfers" violates check constraint "transfers_different_wallets"
+ T05  | Wallet status must be active, frozen or closed                                | check_violation            | new row for relation "wallets" violates check constraint "wallets_status_valid"
+ T06  | Transaction type must be one of the five ledger types                         | check_violation            | new row for relation "transactions" violates check constraint "transactions_type_valid"
+ T07  | A merchant payment must name its merchant                                     | check_violation            | new row for relation "transactions" violates check constraint "transactions_merchant_link"
+ T08  | A transfer leg must point at its transfer                                     | check_violation            | new row for relation "transactions" violates check constraint "transactions_transfer_link"
+ T09  | A failed transfer must record why it failed                                   | check_violation            | new row for relation "transfers" violates check constraint "transfers_failure_reason_required"
+ T10  | A transfer cannot be processed before it was created                          | check_violation            | new row for relation "transfers" violates check constraint "transfers_processed_after_created"
+ T11  | A verified KYC document must record who reviewed it and when                  | check_violation            | new row for relation "kyc_documents" violates check constraint "kyc_documents_review_recorded"
+ T12  | A BVN must be exactly 11 digits                                               | check_violation            | new row for relation "kyc_documents" violates check constraint "kyc_documents_bvn_nin_format"
+ T13  | KYC tier must be 1, 2 or 3                                                    | check_violation            | new row for relation "customers" violates check constraint "customers_kyc_tier_valid"
+ T14  | A phone number must be in +234 international form                             | check_violation            | new row for relation "customers" violates check constraint "customers_phone_format"
+ T15  | An audit entry must name its row, unless it is a balance audit                | check_violation            | new row for relation "audit_log" violates check constraint "audit_log_entity_id_required"
+ T16  | Money above NGN 999,999,999,999.99 does not fit NUMERIC(14,2)                 | numeric_value_out_of_range | numeric field overflow
+ T17  | Two customers cannot share an email                                           | unique_violation           | duplicate key value violates unique constraint "customers_email_key"
+ T18  | Two customers cannot share a phone number                                     | unique_violation           | duplicate key value violates unique constraint "customers_phone_number_key"
+ T19  | A customer cannot open a second main wallet                                   | unique_violation           | duplicate key value violates unique constraint "wallets_one_per_type_key"
+ T20  | Two wallets cannot share a wallet number                                      | unique_violation           | duplicate key value violates unique constraint "wallets_wallet_number_key"
+ T21  | A BVN already on file cannot be registered to another customer                | unique_violation           | duplicate key value violates unique constraint "kyc_documents_number_key"
+ T22  | A customer cannot save the same beneficiary wallet twice                      | unique_violation           | duplicate key value violates unique constraint "beneficiaries_wallet_once_key"
+ T23  | A ledger reference cannot be used twice (no double posting)                   | unique_violation           | duplicate key value violates unique constraint "transactions_reference_key"
+ T24  | A customer must have a last name                                              | not_null_violation         | null value in column "last_name" of relation "customers" violates not-null constraint
+ T25  | A wallet must belong to an existing customer                                  | foreign_key_violation      | insert or update on table "wallets" violates foreign key constraint "wallets_customer_fk"
+ T26  | A merchant payment must point at an existing merchant                         | foreign_key_violation      | insert or update on table "transactions" violates foreign key constraint "transactions_merchant_fk"
+ T27  | ON DELETE RESTRICT: a customer who owns a wallet cannot be deleted            | restrict_violation         | update or delete on table "customers" violates RESTRICT setting of foreign key constraint "wallets_customer_fk" on table "wallets"
+ T28  | ON DELETE RESTRICT: a wallet with transfers and ledger rows cannot be deleted | restrict_violation         | update or delete on table "wallets" violates RESTRICT setting of foreign key constraint "transfers_sender_fk" on table "transfers"
+ T29  | ON DELETE RESTRICT: a merchant with payments cannot be deleted                | restrict_violation         | update or delete on table "merchants" violates RESTRICT setting of foreign key constraint "transactions_merchant_fk" on table "transactions"
+(29 rows)
+
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+    moment     | kyc_documents | beneficiaries 
+---------------+---------------+---------------
+ before delete |             1 |             1
+(1 row)
+
+DELETE 1
+    moment    | kyc_documents | beneficiaries 
+--------------+---------------+---------------
+ after delete |             0 |             0
+(1 row)
+
+ROLLBACK
+psql:portfolio-1-database-design/sql/03_constraint_tests.sql:193: NOTICE:  Sample data unchanged: no rejected statement left anything behind
+DO
+-- psql exit code: 0
