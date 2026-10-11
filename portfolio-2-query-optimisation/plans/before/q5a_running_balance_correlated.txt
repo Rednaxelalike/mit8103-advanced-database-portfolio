@@ -1,0 +1,44 @@
+Q5a. Running balance, first version (correlated subquery): wallet 6645, September 2026
+
+Query:
+    SELECT t.created_at, t.reference, t.transaction_type, t.amount,
+           (SELECT sum(CASE WHEN e.transaction_type IN ('funding', 'transfer_in', 'reversal')
+                            THEN e.amount ELSE -e.amount END)
+            FROM transactions e
+            WHERE e.wallet_id = t.wallet_id
+              AND e.status = 'completed'
+              AND (e.created_at, e.transaction_id) <= (t.created_at, t.transaction_id)
+           ) AS balance_after
+    FROM transactions t
+    WHERE t.wallet_id = 6645
+      AND t.status = 'completed'
+      AND t.created_at >= '2026-09-01 00:00+01'
+      AND t.created_at <  '2026-10-01 00:00+01'
+    ORDER BY t.created_at, t.transaction_id
+
+Execution time of 5 runs (ms): 9099.355, 8067.514, 8370.304, 8248.650, 8105.473
+Median: 8248.650 ms (run 4). The plan of that run follows.
+
+Gather Merge  (cost=26802.48..216487.81 rows=5 width=81) (actual time=398.084..8248.538 rows=29.00 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=451546 read=62596
+  ->  Sort  (cost=25802.45..25802.46 rows=2 width=57) (actual time=83.639..83.645 rows=9.67 loops=3)
+        Sort Key: t.created_at, t.transaction_id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=14951 read=2276
+        Worker 0:  Sort Method: quicksort  Memory: 25kB
+        Worker 1:  Sort Method: quicksort  Memory: 25kB
+        ->  Parallel Seq Scan on transactions t  (cost=0.00..25802.44 rows=2 width=57) (actual time=66.454..83.400 rows=9.67 loops=3)
+              Filter: ((created_at >= '2026-09-01 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+01'::timestamp with time zone) AND (wallet_id = 6645) AND ((status)::text = 'completed'::text))
+              Rows Removed by Filter: 346688
+              Buffers: shared hit=14859 read=2276
+  SubPlan 1
+    ->  Aggregate  (cost=37936.94..37936.95 rows=1 width=32) (actual time=279.908..279.908 rows=1.00 loops=29)
+          Buffers: shared hit=436595 read=60320
+          ->  Seq Scan on transactions e  (cost=0.00..37936.86 rows=9 width=19) (actual time=5.315..279.510 rows=168.00 loops=29)
+                Filter: ((wallet_id = t.wallet_id) AND ((status)::text = 'completed'::text) AND (ROW(created_at, transaction_id) <= ROW(t.created_at, t.transaction_id)))
+                Rows Removed by Filter: 1039925
+                Buffers: shared hit=436595 read=60320
+Planning Time: 0.319 ms
+Execution Time: 8248.650 ms

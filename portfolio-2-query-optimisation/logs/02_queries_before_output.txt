@@ -1,0 +1,278 @@
+SET
+SET
+DROP TABLE
+RESET
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+
+=== Q1. Wallet statement ===
+          created_at           |   reference   | transaction_type | direction |  amount   |  status   |         narration         
+-------------------------------+---------------+------------------+-----------+-----------+-----------+---------------------------
+ 2026-09-02 02:34:09.99642+01  | TXN2609020650 | merchant_payment | debit     |  10650.00 | completed | Clothing
+ 2026-09-03 21:47:08.707786+01 | TXN2609035480 | merchant_payment | debit     |  22140.00 | completed | School fees
+ 2026-09-04 23:53:24.201129+01 | TXN2609045927 | funding          | credit    |  95500.00 | completed | Bank transfer top-up
+ 2026-09-05 03:51:56.770033+01 | TXN2609050937 | merchant_payment | debit     |   8180.00 | completed | Ride
+ 2026-09-05 05:36:57.651883+01 | TXN2609051349 | transfer_out     | debit     |  43900.00 | completed | Family support
+ 2026-09-05 22:15:05.118067+01 | TXN2609055604 | funding          | credit    | 137500.00 | completed | Bank transfer top-up
+ 2026-09-07 04:05:54.173053+01 | TXN2609071053 | funding          | credit    |  14000.00 | completed | Bank transfer top-up
+ 2026-09-07 09:23:30.423476+01 | TXN2609072387 | merchant_payment | debit     |   1350.00 | completed | Ride
+ 2026-09-07 14:30:22.370599+01 | TXN2609073728 | transfer_out     | debit     |    500.00 | completed | Business supplies
+ 2026-09-09 05:54:32.352058+01 | TXN2609091461 | transfer_in      | credit    |  66900.00 | completed | Loan repayment
+ 2026-09-12 09:13:04.323991+01 | TXN2609122345 | transfer_out     | debit     |  87300.00 | completed | For the event
+ 2026-09-14 12:25:33.833298+01 | TXN2609143346 | merchant_payment | debit     |    660.00 | completed | Ride
+ 2026-09-14 23:12:29.956678+01 | TXN2609146286 | funding          | credit    |   1000.00 | completed | Bank transfer top-up
+ 2026-09-14 23:29:39.124651+01 | TXN2609146352 | merchant_payment | debit     |  14810.00 | completed | Prepaid electricity token
+ 2026-09-15 18:12:49.03313+01  | TXN2609154923 | merchant_payment | debit     |  55147.28 | completed | Groceries
+ 2026-09-17 17:55:58.675067+01 | TXN2609174805 | merchant_payment | debit     |  24918.04 | completed | Food and drinks
+ 2026-09-18 07:54:12.92394+01  | TXN2609182107 | merchant_payment | debit     |  16460.00 | completed | Clothing
+ 2026-09-18 12:32:38.759168+01 | TXN2609183332 | transfer_out     | debit     |  80100.00 | completed | Birthday gift
+ 2026-09-19 02:34:11.643652+01 | TXN2609190697 | merchant_payment | debit     |   1502.77 | completed | Food and drinks
+ 2026-09-20 00:48:06.241141+01 | TXN2609200221 | transfer_out     | debit     | 479000.00 | completed | Move to savings
+ 2026-09-24 06:41:06.398059+01 | TXN2609241834 | transfer_in      | credit    |   1300.00 | completed | School fees
+ 2026-09-24 23:37:38.53337+01  | TXN2609246505 | transfer_out     | debit     |    700.00 | completed | Aso-ebi contribution
+ 2026-09-26 08:14:19.181692+01 | TXN2609262209 | transfer_out     | debit     |    500.00 | completed | Move to savings
+ 2026-09-27 10:09:08.393714+01 | TXN2609272744 | merchant_payment | debit     |   5020.00 | completed | Clothing
+ 2026-09-27 12:40:08.489748+01 | TXN2609273449 | merchant_payment | debit     |  57370.00 | completed | Clothing
+ 2026-09-28 03:21:19.379245+01 | TXN2609280859 | transfer_out     | debit     |    700.00 | completed | Lunch money
+ 2026-09-29 10:26:11.887656+01 | TXN2609292786 | merchant_payment | debit     |   3040.00 | completed | Cinema and events
+ 2026-09-30 05:18:07.974595+01 | TXN2609301460 | merchant_payment | debit     |  13993.91 | completed | Groceries
+ 2026-09-30 22:49:29.890449+01 | TXN2609306614 | merchant_payment | debit     |  21370.00 | completed | Prepaid electricity token
+(29 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q2. Monthly totals by type ===
+   month    | transaction_type | row_count |   total_ngn   
+------------+------------------+-----------+---------------
+ 2026-07-01 | funding          |     27042 | 3078050500.00
+ 2026-07-01 | merchant_payment |     63319 | 1636185862.08
+ 2026-07-01 | reversal         |       163 |   10641300.00
+ 2026-07-01 | transfer_in      |     27673 | 1545110600.00
+ 2026-07-01 | transfer_out     |     27836 | 1555751900.00
+ 2026-08-01 | funding          |     29767 | 3169723000.00
+ 2026-08-01 | merchant_payment |     71905 | 1866327019.61
+ 2026-08-01 | reversal         |       173 |   12933900.00
+ 2026-08-01 | transfer_in      |     35231 | 2037287900.00
+ 2026-08-01 | transfer_out     |     35404 | 2050221800.00
+ 2026-09-01 | funding          |     30687 | 3044945500.00
+ 2026-09-01 | merchant_payment |     76481 | 1973975626.89
+ 2026-09-01 | reversal         |       235 |   15122500.00
+ 2026-09-01 | transfer_in      |     41402 | 2348237300.00
+ 2026-09-01 | transfer_out     |     41637 | 2363359800.00
+(15 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q3. Top merchants ===
+ merchant_id |      business_name       |  category   | payments |  total_ngn   
+-------------+--------------------------+-------------+----------+--------------
+          50 | Maryland Boutique        | fashion     |     6557 | 269658100.00
+         237 | Ogba Electronics         | electronics |      398 |  93620740.00
+         180 | Yaba Electronics         | electronics |      269 |  66239730.00
+         271 | Ketu Electronics         | electronics |      252 |  65311860.00
+         363 | Victoria Island Boutique | fashion     |     1087 |  44940470.00
+         183 | Sangotedo Academy        | education   |      327 |  40272150.00
+         491 | Ikorodu Electronics      | electronics |      168 |  38210600.00
+         427 | Oshodi Electronics       | electronics |      133 |  30885010.00
+         310 | Gbagada Electronics      | electronics |      120 |  30019570.00
+         189 | Ojota Electronics        | electronics |      115 |  29291310.00
+(10 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q4. Inactive customers ===
+ customer_id | first_name | last_name |               email                | kyc_tier | balance_held 
+-------------+------------+-----------+------------------------------------+----------+--------------
+         704 | Ebuka      | Umar      | ebuka.umar15590@example.com        |        2 |   3105630.00
+        4562 | Sadiq      | Ogunbiyi  | sadiq.ogunbiyi9885@example.com     |        2 |   2857680.00
+       10795 | Jumoke     | Opara     | jumoke.opara25620@example.com      |        1 |   2847796.98
+        6129 | Halima     | Chukwu    | halima.chukwu39692@example.com     |        2 |   2729177.60
+        7542 | Esther     | Nwachukwu | esther.nwachukwu34317@example.com  |        2 |   2702596.46
+       28689 | Folasade   | Opara     | folasade.opara12554@example.com    |        2 |   2670100.00
+        5835 | Uchenna    | Olaniyan  | uchenna.olaniyan15107@example.com  |        2 |   2590954.52
+       13895 | Kemi       | Mohammed  | kemi.mohammed33180@example.com     |        3 |   2527750.00
+       25775 | Zubairu    | Nwachukwu | zubairu.nwachukwu29269@example.com |        2 |   2401067.85
+       19417 | Fatima     | Yusuf     | fatima.yusuf39641@example.com      |        2 |   2397494.21
+        7981 | Musa       | Suleiman  | musa.suleiman10579@example.com     |        3 |   2370738.68
+       17264 | Chinedu    | Oyelaran  | chinedu.oyelaran13389@example.com  |        2 |   2269911.65
+       14484 | Damilola   | Udeh      | damilola.udeh38110@example.com     |        1 |   2266648.04
+       22652 | Adewale    | Anyanwu   | adewale.anyanwu12112@example.com   |        1 |   2233690.58
+       17726 | Ifeoma     | Ajayi     | ifeoma.ajayi36122@example.com      |        3 |   2231300.00
+       25278 | Emeka      | Ogbu      | emeka.ogbu48852@example.com        |        2 |   2189841.74
+       23681 | Blessing   | Fashola   | blessing.fashola2078@example.com   |        3 |   2175000.00
+       14322 | Ebuka      | Akinola   | ebuka.akinola11@example.com        |        2 |   2156406.55
+        7701 | Babatunde  | Okafor    | babatunde.okafor40023@example.com  |        2 |   2114307.14
+       24805 | Adewale    | Yusuf     | adewale.yusuf21278@example.com     |        3 |   2092300.00
+(20 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q5a. Running balance, correlated subquery ===
+          created_at           |   reference   | transaction_type |  amount   | balance_after 
+-------------------------------+---------------+------------------+-----------+---------------
+ 2026-09-02 02:34:09.99642+01  | TXN2609020650 | merchant_payment |  10650.00 |    3185484.08
+ 2026-09-03 21:47:08.707786+01 | TXN2609035480 | merchant_payment |  22140.00 |    3163344.08
+ 2026-09-04 23:53:24.201129+01 | TXN2609045927 | funding          |  95500.00 |    3258844.08
+ 2026-09-05 03:51:56.770033+01 | TXN2609050937 | merchant_payment |   8180.00 |    3250664.08
+ 2026-09-05 05:36:57.651883+01 | TXN2609051349 | transfer_out     |  43900.00 |    3206764.08
+ 2026-09-05 22:15:05.118067+01 | TXN2609055604 | funding          | 137500.00 |    3344264.08
+ 2026-09-07 04:05:54.173053+01 | TXN2609071053 | funding          |  14000.00 |    3358264.08
+ 2026-09-07 09:23:30.423476+01 | TXN2609072387 | merchant_payment |   1350.00 |    3356914.08
+ 2026-09-07 14:30:22.370599+01 | TXN2609073728 | transfer_out     |    500.00 |    3356414.08
+ 2026-09-09 05:54:32.352058+01 | TXN2609091461 | transfer_in      |  66900.00 |    3423314.08
+ 2026-09-12 09:13:04.323991+01 | TXN2609122345 | transfer_out     |  87300.00 |    3336014.08
+ 2026-09-14 12:25:33.833298+01 | TXN2609143346 | merchant_payment |    660.00 |    3335354.08
+ 2026-09-14 23:12:29.956678+01 | TXN2609146286 | funding          |   1000.00 |    3336354.08
+ 2026-09-14 23:29:39.124651+01 | TXN2609146352 | merchant_payment |  14810.00 |    3321544.08
+ 2026-09-15 18:12:49.03313+01  | TXN2609154923 | merchant_payment |  55147.28 |    3266396.80
+ 2026-09-17 17:55:58.675067+01 | TXN2609174805 | merchant_payment |  24918.04 |    3241478.76
+ 2026-09-18 07:54:12.92394+01  | TXN2609182107 | merchant_payment |  16460.00 |    3225018.76
+ 2026-09-18 12:32:38.759168+01 | TXN2609183332 | transfer_out     |  80100.00 |    3144918.76
+ 2026-09-19 02:34:11.643652+01 | TXN2609190697 | merchant_payment |   1502.77 |    3143415.99
+ 2026-09-20 00:48:06.241141+01 | TXN2609200221 | transfer_out     | 479000.00 |    2664415.99
+ 2026-09-24 06:41:06.398059+01 | TXN2609241834 | transfer_in      |   1300.00 |    2665715.99
+ 2026-09-24 23:37:38.53337+01  | TXN2609246505 | transfer_out     |    700.00 |    2665015.99
+ 2026-09-26 08:14:19.181692+01 | TXN2609262209 | transfer_out     |    500.00 |    2664515.99
+ 2026-09-27 10:09:08.393714+01 | TXN2609272744 | merchant_payment |   5020.00 |    2659495.99
+ 2026-09-27 12:40:08.489748+01 | TXN2609273449 | merchant_payment |  57370.00 |    2602125.99
+ 2026-09-28 03:21:19.379245+01 | TXN2609280859 | transfer_out     |    700.00 |    2601425.99
+ 2026-09-29 10:26:11.887656+01 | TXN2609292786 | merchant_payment |   3040.00 |    2598385.99
+ 2026-09-30 05:18:07.974595+01 | TXN2609301460 | merchant_payment |  13993.91 |    2584392.08
+ 2026-09-30 22:49:29.890449+01 | TXN2609306614 | merchant_payment |  21370.00 |    2563022.08
+(29 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q5b. Running balance, window function ===
+          created_at           |   reference   | transaction_type |  amount   | balance_after 
+-------------------------------+---------------+------------------+-----------+---------------
+ 2026-09-02 02:34:09.99642+01  | TXN2609020650 | merchant_payment |  10650.00 |    3185484.08
+ 2026-09-03 21:47:08.707786+01 | TXN2609035480 | merchant_payment |  22140.00 |    3163344.08
+ 2026-09-04 23:53:24.201129+01 | TXN2609045927 | funding          |  95500.00 |    3258844.08
+ 2026-09-05 03:51:56.770033+01 | TXN2609050937 | merchant_payment |   8180.00 |    3250664.08
+ 2026-09-05 05:36:57.651883+01 | TXN2609051349 | transfer_out     |  43900.00 |    3206764.08
+ 2026-09-05 22:15:05.118067+01 | TXN2609055604 | funding          | 137500.00 |    3344264.08
+ 2026-09-07 04:05:54.173053+01 | TXN2609071053 | funding          |  14000.00 |    3358264.08
+ 2026-09-07 09:23:30.423476+01 | TXN2609072387 | merchant_payment |   1350.00 |    3356914.08
+ 2026-09-07 14:30:22.370599+01 | TXN2609073728 | transfer_out     |    500.00 |    3356414.08
+ 2026-09-09 05:54:32.352058+01 | TXN2609091461 | transfer_in      |  66900.00 |    3423314.08
+ 2026-09-12 09:13:04.323991+01 | TXN2609122345 | transfer_out     |  87300.00 |    3336014.08
+ 2026-09-14 12:25:33.833298+01 | TXN2609143346 | merchant_payment |    660.00 |    3335354.08
+ 2026-09-14 23:12:29.956678+01 | TXN2609146286 | funding          |   1000.00 |    3336354.08
+ 2026-09-14 23:29:39.124651+01 | TXN2609146352 | merchant_payment |  14810.00 |    3321544.08
+ 2026-09-15 18:12:49.03313+01  | TXN2609154923 | merchant_payment |  55147.28 |    3266396.80
+ 2026-09-17 17:55:58.675067+01 | TXN2609174805 | merchant_payment |  24918.04 |    3241478.76
+ 2026-09-18 07:54:12.92394+01  | TXN2609182107 | merchant_payment |  16460.00 |    3225018.76
+ 2026-09-18 12:32:38.759168+01 | TXN2609183332 | transfer_out     |  80100.00 |    3144918.76
+ 2026-09-19 02:34:11.643652+01 | TXN2609190697 | merchant_payment |   1502.77 |    3143415.99
+ 2026-09-20 00:48:06.241141+01 | TXN2609200221 | transfer_out     | 479000.00 |    2664415.99
+ 2026-09-24 06:41:06.398059+01 | TXN2609241834 | transfer_in      |   1300.00 |    2665715.99
+ 2026-09-24 23:37:38.53337+01  | TXN2609246505 | transfer_out     |    700.00 |    2665015.99
+ 2026-09-26 08:14:19.181692+01 | TXN2609262209 | transfer_out     |    500.00 |    2664515.99
+ 2026-09-27 10:09:08.393714+01 | TXN2609272744 | merchant_payment |   5020.00 |    2659495.99
+ 2026-09-27 12:40:08.489748+01 | TXN2609273449 | merchant_payment |  57370.00 |    2602125.99
+ 2026-09-28 03:21:19.379245+01 | TXN2609280859 | transfer_out     |    700.00 |    2601425.99
+ 2026-09-29 10:26:11.887656+01 | TXN2609292786 | merchant_payment |   3040.00 |    2598385.99
+ 2026-09-30 05:18:07.974595+01 | TXN2609301460 | merchant_payment |  13993.91 |    2584392.08
+ 2026-09-30 22:49:29.890449+01 | TXN2609306614 | merchant_payment |  21370.00 |    2563022.08
+(29 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q6. Large-transfer check ===
+ customer_id | first_name | last_name | kyc_tier | wallet_number | large_count | large_total_ngn | still_held |       flag        
+-------------+------------+-----------+----------+---------------+-------------+-----------------+------------+-------------------
+       29535 | Uchenna    | Ezenwa    |        2 | 5000029535    |           2 |      3959000.00 |          0 | check: KYC tier 2
+       10697 | Onyeka     | Olaniyan  |        2 | 5000010697    |           3 |      3931000.00 |          1 | check: KYC tier 2
+        6006 | Usman      | Udeh      |        2 | 5000006006    |           2 |      3248000.00 |          0 | check: KYC tier 2
+       28934 | Aminu      | Olaniyan  |        1 | 5000028934    |           2 |      2975000.00 |          0 | check: KYC tier 1
+        6397 | Femi       | Udeh      |        2 | 5000006397    |           2 |      2892000.00 |          0 | check: KYC tier 2
+       46000 | Aminu      | Ekwueme   |        3 | 5000046000    |           2 |      2859000.00 |          1 | ok
+       17823 | Kemi       | Taiwo     |        1 | 5000017823    |           2 |      2746000.00 |          0 | check: KYC tier 1
+       36478 | Blessing   | Eze       |        1 | 5000036478    |           2 |      2716000.00 |          0 | check: KYC tier 1
+       32388 | Funke      | Igwe      |        2 | 5000032388    |           2 |      2587000.00 |          0 | check: KYC tier 2
+       18100 | Uchenna    | Ogbu      |        3 | 5000018100    |           1 |      2497000.00 |          0 | ok
+        7071 | Rasheed    | Chukwu    |        1 | 5000007071    |           1 |      2486000.00 |          0 | check: KYC tier 1
+       24696 | Efe        | Yusuf     |        2 | 5000024696    |           1 |      2479000.00 |          0 | check: KYC tier 2
+       39296 | Kemi       | Igwe      |        2 | 5000039296    |           1 |      2479000.00 |          0 | check: KYC tier 2
+       28299 | Ifeoma     | Taiwo     |        2 | 5000028299    |           1 |      2475000.00 |          0 | check: KYC tier 2
+       44080 | Damilola   | Obi       |        1 | 5000044080    |           1 |      2469000.00 |          0 | check: KYC tier 1
+       47149 | Funke      | Akande    |        3 | 5000047149    |           1 |      2465000.00 |          0 | ok
+       29906 | Gbenga     | Lawal     |        2 | 5000029906    |           1 |      2464000.00 |          0 | check: KYC tier 2
+       31010 | Fatima     | Yusuf     |        1 | 5000031010    |           1 |      2461000.00 |          1 | check: KYC tier 1
+       29668 | Femi       | Eze       |        2 | 5000029668    |           1 |      2459000.00 |          0 | check: KYC tier 2
+       32382 | Fatima     | Abiodun   |        2 | 5000032382    |           1 |      2453000.00 |          0 | check: KYC tier 2
+(20 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q7. Held-transfer review queue ===
+ transfer_id |   reference   |          created_at           |   amount   |     sender      | kyc_tier | hours_waiting 
+-------------+---------------+-------------------------------+------------+-----------------+----------+---------------
+      194476 | TRF2610060007 | 2026-10-06 00:07:24.261535+01 | 1357000.00 | Zainab Udeh     |        3 |          71.9
+      194522 | TRF2610060053 | 2026-10-06 00:59:44.259713+01 |  773000.00 | Olamide Onuoha  |        1 |          71.0
+      194579 | TRF2610060110 | 2026-10-06 01:50:33.713764+01 |  758000.00 | Ese Nwachukwu   |        2 |          70.2
+      194595 | TRF2610060126 | 2026-10-06 02:04:38.470676+01 | 1864000.00 | Folasade Onuoha |        2 |          69.9
+      194604 | TRF2610060135 | 2026-10-06 02:08:16.837576+01 |  451000.00 | Tolani Abiodun  |        1 |          69.9
+      194644 | TRF2610060175 | 2026-10-06 02:46:49.72697+01  |  310000.00 | Ayodele Garba   |        2 |          69.2
+      194657 | TRF2610060188 | 2026-10-06 02:57:40.350561+01 |  270000.00 | Gbenga Abiodun  |        2 |          69.0
+      194739 | TRF2610060270 | 2026-10-06 04:18:42.969383+01 |  317000.00 | Nkechi Kalu     |        3 |          67.7
+      194841 | TRF2610060372 | 2026-10-06 05:35:33.376742+01 |  292000.00 | Gbenga Salami   |        2 |          66.4
+      194851 | TRF2610060382 | 2026-10-06 05:41:23.060125+01 | 1104000.00 | Uchenna Uzor    |        2 |          66.3
+      194960 | TRF2610060491 | 2026-10-06 07:23:53.342828+01 | 1355000.00 | Musa Anyanwu    |        2 |          64.6
+      194974 | TRF2610060505 | 2026-10-06 07:36:05.807661+01 |  279000.00 | Emeka Ibekwe    |        1 |          64.4
+      194976 | TRF2610060507 | 2026-10-06 07:38:00.759722+01 | 1051000.00 | Ifeoma Garba    |        1 |          64.4
+      194995 | TRF2610060526 | 2026-10-06 07:55:45.536296+01 | 1529000.00 | Fatima Lawal    |        3 |          64.1
+      195095 | TRF2610060626 | 2026-10-06 09:47:22.154556+01 |  871000.00 | Gbenga Igwe     |        2 |          62.2
+      195097 | TRF2610060628 | 2026-10-06 09:48:06.718487+01 | 1860000.00 | Joy Adeyemi     |        1 |          62.2
+      195149 | TRF2610060680 | 2026-10-06 10:35:11.309561+01 |  841000.00 | Zubairu Shittu  |        1 |          61.4
+      195154 | TRF2610060685 | 2026-10-06 10:41:06.048641+01 |  250000.00 | Babatunde Bello |        1 |          61.3
+      195157 | TRF2610060688 | 2026-10-06 10:43:30.039879+01 | 1458000.00 | Rasheed Ekwueme |        1 |          61.3
+      195262 | TRF2610060793 | 2026-10-06 12:29:58.785711+01 |  503000.00 | Uchenna Shittu  |        1 |          59.5
+      195296 | TRF2610060827 | 2026-10-06 13:01:18.889713+01 | 1317000.00 | Tobi Kalu       |        1 |          59.0
+      195317 | TRF2610060848 | 2026-10-06 13:17:53.998221+01 | 1812000.00 | Joy Adeleke     |        1 |          58.7
+      195379 | TRF2610060910 | 2026-10-06 14:08:26.210378+01 | 1657000.00 | Sola Umar       |        1 |          57.9
+      195423 | TRF2610060954 | 2026-10-06 14:53:17.653725+01 | 2256000.00 | Kayode Igwe     |        3 |          57.1
+      195463 | TRF2610060994 | 2026-10-06 15:25:22.771108+01 |  680000.00 | Olumide Salami  |        3 |          56.6
+(25 rows)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q8. Customer look-up by email ===
+ customer_id | first_name | last_name |              email               |  phone_number  | kyc_tier | status 
+-------------+------------+-----------+----------------------------------+----------------+----------+--------
+       30013 | Zainab     | Mohammed  | Zainab.Mohammed10549@example.com | +2349010010549 |        3 | active
+(1 row)
+
+Output format is unaligned.
+Output format is aligned.
+=== Q5a and Q5b return the same rows ===
+ q5a_rows | q5b_rows | rows_that_differ 
+----------+----------+------------------
+       29 |       29 |                0
+(1 row)
+
+=== Execution time of each query, 5 runs (ms) ===
+ label |             qname              | median_ms | fastest_ms | slowest_ms |                   all_runs_ms                    
+-------+--------------------------------+-----------+------------+------------+--------------------------------------------------
+ Q1    | q1_wallet_statement            |   164.247 |    140.793 |    178.807 | 140.793, 157.031, 164.247, 178.807, 175.035
+ Q2    | q2_monthly_totals              |  1669.330 |    833.406 |   2014.800 | 833.406, 1521.963, 2014.800, 1862.209, 1669.330
+ Q3    | q3_top_merchants               |   168.005 |    151.960 |    574.030 | 574.030, 185.615, 168.005, 151.960, 154.487
+ Q4    | q4_inactive_customers          |   420.705 |    376.530 |    466.597 | 426.735, 376.530, 420.705, 394.759, 466.597
+ Q5a   | q5a_running_balance_correlated |  8248.650 |   8067.514 |   9099.355 | 9099.355, 8067.514, 8370.304, 8248.650, 8105.473
+ Q5b   | q5b_running_balance_window     |   166.973 |    108.099 |    250.169 | 235.076, 166.973, 109.555, 108.099, 250.169
+ Q6    | q6_large_transfer_check        |   105.672 |     95.569 |    253.186 | 97.175, 95.569, 109.401, 253.186, 105.672
+ Q7    | q7_held_transfer_queue         |    67.599 |     65.784 |     71.513 | 67.599, 65.784, 66.062, 70.663, 71.513
+ Q8    | q8_email_lookup                |    51.952 |     49.723 |     68.096 | 51.005, 63.284, 51.952, 68.096, 49.723
+(9 rows)
+

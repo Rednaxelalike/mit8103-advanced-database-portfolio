@@ -1,0 +1,60 @@
+Q3. Top 10 merchants by money received: 9 September to 8 October 2026
+
+Query:
+    SELECT m.merchant_id, m.business_name, m.category,
+           count(*)      AS payments,
+           sum(t.amount) AS total_ngn
+    FROM transactions t
+    JOIN merchants m ON m.merchant_id = t.merchant_id
+    WHERE t.transaction_type = 'merchant_payment'
+      AND t.status = 'completed'
+      AND t.created_at >= '2026-09-09 00:00+01'
+      AND t.created_at <  '2026-10-09 00:00+01'
+    GROUP BY m.merchant_id
+    ORDER BY total_ngn DESC
+    LIMIT 10
+
+Execution time of 5 runs (ms): 574.030, 185.615, 168.005, 151.960, 154.487
+Median: 168.005 ms (run 3). The plan of that run follows.
+
+Limit  (cost=27348.86..27348.89 rows=10 width=75) (actual time=162.270..167.854 rows=10.00 loops=1)
+  Buffers: shared hit=14893 read=2282
+  ->  Sort  (cost=27348.86..27350.11 rows=500 width=75) (actual time=162.269..167.851 rows=10.00 loops=1)
+        Sort Key: (sum(t.amount)) DESC
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=14893 read=2282
+        ->  Finalize GroupAggregate  (cost=27180.05..27338.06 rows=500 width=75) (actual time=160.070..167.584 rows=490.00 loops=1)
+              Group Key: m.merchant_id
+              Buffers: shared hit=14893 read=2282
+              ->  Gather Merge  (cost=27180.05..27319.81 rows=1200 width=75) (actual time=160.059..166.164 rows=1470.00 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=14893 read=2282
+                    ->  Sort  (cost=26180.02..26181.27 rows=500 width=75) (actual time=115.548..115.589 rows=490.00 loops=3)
+                          Sort Key: m.merchant_id
+                          Sort Method: quicksort  Memory: 89kB
+                          Buffers: shared hit=14893 read=2282
+                          Worker 0:  Sort Method: quicksort  Memory: 89kB
+                          Worker 1:  Sort Method: quicksort  Memory: 89kB
+                          ->  Partial HashAggregate  (cost=26151.36..26157.61 rows=500 width=75) (actual time=115.090..115.328 rows=490.00 loops=3)
+                                Group Key: m.merchant_id
+                                Batches: 1  Memory Usage: 353kB
+                                Buffers: shared hit=14877 read=2282
+                                Worker 0:  Batches: 1  Memory Usage: 353kB
+                                Worker 1:  Batches: 1  Memory Usage: 353kB
+                                ->  Hash Join  (cost=19.25..25907.37 rows=32531 width=41) (actual time=37.897..106.027 rows=25967.00 loops=3)
+                                      Hash Cond: (t.merchant_id = m.merchant_id)
+                                      Buffers: shared hit=14877 read=2282
+                                      ->  Parallel Seq Scan on transactions t  (cost=0.00..25802.44 rows=32531 width=14) (actual time=36.787..97.087 rows=25967.00 loops=3)
+                                            Filter: ((created_at >= '2026-09-09 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-09 00:00:00+01'::timestamp with time zone) AND ((transaction_type)::text = 'merchant_payment'::text) AND ((status)::text = 'completed'::text))
+                                            Rows Removed by Filter: 320731
+                                            Buffers: shared hit=14853 read=2282
+                                      ->  Hash  (cost=13.00..13.00 rows=500 width=35) (actual time=1.084..1.085 rows=500.00 loops=3)
+                                            Buckets: 1024  Batches: 1  Memory Usage: 42kB
+                                            Buffers: shared hit=24
+                                            ->  Seq Scan on merchants m  (cost=0.00..13.00 rows=500 width=35) (actual time=0.772..0.904 rows=500.00 loops=3)
+                                                  Buffers: shared hit=24
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.237 ms
+Execution Time: 168.005 ms

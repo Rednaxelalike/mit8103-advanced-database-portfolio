@@ -1,0 +1,74 @@
+Q4. Inactive customers: no activity in the 90 days to 8 October 2026, top 20 by balance
+
+Query:
+    SELECT c.customer_id, c.first_name, c.last_name, c.email, c.kyc_tier,
+           sum(w.balance) AS balance_held
+    FROM customers c
+    JOIN wallets w ON w.customer_id = c.customer_id
+    WHERE c.status = 'active'
+      AND NOT EXISTS (
+            SELECT 1
+            FROM wallets w2
+            JOIN transactions t ON t.wallet_id = w2.wallet_id
+            WHERE w2.customer_id = c.customer_id
+              AND t.created_at >= '2026-07-11 00:00+01')
+    GROUP BY c.customer_id
+    ORDER BY balance_held DESC, c.customer_id
+    LIMIT 20
+
+Execution time of 5 runs (ms): 426.735, 376.530, 420.705, 394.759, 466.597
+Median: 420.705 ms (run 3). The plan of that run follows.
+
+Limit  (cost=32895.20..32895.25 rows=20 width=84) (actual time=409.032..419.986 rows=20.00 loops=1)
+  Buffers: shared hit=18526 read=3198
+  ->  Sort  (cost=32895.20..32902.89 rows=3076 width=84) (actual time=409.031..419.983 rows=20.00 loops=1)
+        Sort Key: (sum(w.balance)) DESC, c.customer_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=18526 read=3198
+        ->  GroupAggregate  (cost=32401.27..32813.35 rows=3076 width=84) (actual time=399.869..417.762 rows=3825.00 loops=1)
+              Group Key: c.customer_id
+              Buffers: shared hit=18526 read=3198
+              ->  Gather Merge  (cost=32401.27..32759.52 rows=3076 width=59) (actual time=399.859..412.208 rows=4537.00 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=18526 read=3198
+                    ->  Sort  (cost=31401.25..31404.45 rows=1282 width=59) (actual time=354.286..354.455 rows=1512.33 loops=3)
+                          Sort Key: c.customer_id
+                          Sort Method: quicksort  Memory: 25kB
+                          Buffers: shared hit=18526 read=3198
+                          Worker 0:  Sort Method: quicksort  Memory: 555kB
+                          Worker 1:  Sort Method: quicksort  Memory: 25kB
+                          ->  Parallel Hash Right Anti Join  (cost=5941.06..31335.07 rows=1282 width=59) (actual time=351.554..353.688 rows=1512.33 loops=3)
+                                Hash Cond: (w2.customer_id = c.customer_id)
+                                Buffers: shared hit=18510 read=3198
+                                ->  Parallel Hash Join  (cost=1926.37..25043.63 rows=215265 width=8) (actual time=38.771..198.044 rows=172912.00 loops=3)
+                                      Hash Cond: (t.wallet_id = w2.wallet_id)
+                                      Buffers: shared hit=15088 read=3198
+                                      ->  Parallel Seq Scan on transactions t  (cost=0.00..22552.15 rows=215265 width=8) (actual time=29.495..104.107 rows=172912.00 loops=3)
+                                            Filter: (created_at >= '2026-07-11 00:00:00+01'::timestamp with time zone)
+                                            Rows Removed by Filter: 173786
+                                            Buffers: shared hit=13937 read=3198
+                                      ->  Parallel Hash  (cost=1495.61..1495.61 rows=34461 width=16) (actual time=9.113..9.114 rows=19527.67 loops=3)
+                                            Buckets: 65536  Batches: 1  Memory Usage: 3328kB
+                                            Buffers: shared hit=1151
+                                            ->  Parallel Seq Scan on wallets w2  (cost=0.00..1495.61 rows=34461 width=16) (actual time=0.012..4.030 rows=19527.67 loops=3)
+                                                  Buffers: shared hit=1151
+                                ->  Parallel Hash  (cost=3587.86..3587.86 rows=34146 width=59) (actual time=62.339..62.340 rows=19348.00 loops=3)
+                                      Buckets: 65536  Batches: 1  Memory Usage: 6176kB
+                                      Buffers: shared hit=3422
+                                      ->  Hash Join  (cost=2001.79..3587.86 rows=34146 width=59) (actual time=44.462..53.466 rows=19348.00 loops=3)
+                                            Hash Cond: (w.customer_id = c.customer_id)
+                                            Buffers: shared hit=3422
+                                            ->  Parallel Seq Scan on wallets w  (cost=0.00..1495.61 rows=34461 width=15) (actual time=0.013..1.371 rows=19527.67 loops=3)
+                                                  Buffers: shared hit=1151
+                                            ->  Hash  (cost=1382.25..1382.25 rows=49563 width=52) (actual time=44.275..44.275 rows=49560.00 loops=3)
+                                                  Buckets: 65536  Batches: 1  Memory Usage: 4728kB
+                                                  Buffers: shared hit=2271
+                                                  ->  Seq Scan on customers c  (cost=0.00..1382.25 rows=49563 width=52) (actual time=0.579..22.460 rows=49560.00 loops=3)
+                                                        Filter: ((status)::text = 'active'::text)
+                                                        Rows Removed by Filter: 460
+                                                        Buffers: shared hit=2271
+Planning:
+  Buffers: shared hit=30
+Planning Time: 0.484 ms
+Execution Time: 420.705 ms

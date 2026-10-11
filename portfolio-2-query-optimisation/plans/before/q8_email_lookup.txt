@@ -1,0 +1,16 @@
+Q8. Customer look-up by email, ignoring case
+
+Query:
+    SELECT customer_id, first_name, last_name, email, phone_number, kyc_tier, status
+    FROM customers
+    WHERE lower(email) = lower('zainab.mohammed10549@example.com')
+
+Execution time of 5 runs (ms): 51.005, 63.284, 51.952, 68.096, 49.723
+Median: 51.952 ms (run 3). The plan of that run follows.
+
+Seq Scan on customers  (cost=0.00..1507.30 rows=250 width=74) (actual time=32.098..51.932 rows=1.00 loops=1)
+  Filter: (lower((email)::text) = 'zainab.mohammed10549@example.com'::text)
+  Rows Removed by Filter: 50019
+  Buffers: shared hit=757
+Planning Time: 0.134 ms
+Execution Time: 51.952 ms

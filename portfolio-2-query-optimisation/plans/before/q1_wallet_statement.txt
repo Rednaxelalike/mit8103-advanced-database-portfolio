@@ -1,0 +1,30 @@
+Q1. Wallet statement: wallet 6645, September 2026
+
+Query:
+    SELECT t.created_at, t.reference, t.transaction_type,
+           CASE WHEN t.transaction_type IN ('funding', 'transfer_in', 'reversal')
+                THEN 'credit' ELSE 'debit' END AS direction,
+           t.amount, t.status, t.narration
+    FROM transactions t
+    WHERE t.wallet_id = 6645
+      AND t.created_at >= '2026-09-01 00:00+01'
+      AND t.created_at <  '2026-10-01 00:00+01'
+    ORDER BY t.created_at, t.transaction_id
+
+Execution time of 5 runs (ms): 140.793, 157.031, 164.247, 178.807, 175.035
+Median: 164.247 ms (run 3). The plan of that run follows.
+
+Sort  (cost=25719.58..25719.59 rows=5 width=104) (actual time=155.320..164.223 rows=29.00 loops=1)
+  Sort Key: created_at, transaction_id
+  Sort Method: quicksort  Memory: 27kB
+  Buffers: shared hit=12597 read=4538
+  ->  Gather  (cost=1000.00..25719.52 rows=5 width=104) (actual time=130.715..164.188 rows=29.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=12597 read=4538
+        ->  Parallel Seq Scan on transactions t  (cost=0.00..24719.02 rows=2 width=104) (actual time=75.809..99.355 rows=9.67 loops=3)
+              Filter: ((created_at >= '2026-09-01 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+01'::timestamp with time zone) AND (wallet_id = 6645))
+              Rows Removed by Filter: 346688
+              Buffers: shared hit=12597 read=4538
+Planning Time: 0.095 ms
+Execution Time: 164.247 ms

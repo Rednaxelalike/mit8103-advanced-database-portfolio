@@ -1,0 +1,45 @@
+Q5b. Running balance, rewritten (window function): wallet 6645, September 2026
+
+Query:
+    SELECT created_at, reference, transaction_type, amount, balance_after
+    FROM (
+        SELECT t.created_at, t.transaction_id, t.reference, t.transaction_type, t.amount,
+               sum(CASE WHEN t.transaction_type IN ('funding', 'transfer_in', 'reversal')
+                        THEN t.amount ELSE -t.amount END)
+                   OVER (ORDER BY t.created_at, t.transaction_id
+                         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance_after
+        FROM transactions t
+        WHERE t.wallet_id = 6645
+          AND t.status = 'completed'
+    ) s
+    WHERE created_at >= '2026-09-01 00:00+01'
+      AND created_at <  '2026-10-01 00:00+01'
+    ORDER BY created_at, transaction_id
+
+Execution time of 5 runs (ms): 235.076, 166.973, 109.555, 108.099, 250.169
+Median: 166.973 ms (run 2). The plan of that run follows.
+
+Subquery Scan on s  (cost=24635.94..24639.99 rows=5 width=81) (actual time=159.905..166.909 rows=29.00 loops=1)
+  Filter: ((s.created_at >= '2026-09-01 00:00:00+01'::timestamp with time zone) AND (s.created_at < '2026-10-01 00:00:00+01'::timestamp with time zone))
+  Rows Removed by Filter: 160
+  Buffers: shared hit=15711 read=1516
+  ->  WindowAgg  (cost=24635.94..24639.58 rows=27 width=81) (actual time=159.543..166.853 rows=189.00 loops=1)
+        Window: w1 AS (ORDER BY t.created_at, t.transaction_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        Storage: Memory  Maximum Storage: 17kB
+        Buffers: shared hit=15711 read=1516
+        ->  Gather Merge  (cost=24635.80..24638.94 rows=27 width=49) (actual time=159.523..166.509 rows=189.00 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              Buffers: shared hit=15711 read=1516
+              ->  Sort  (cost=23635.77..23635.80 rows=11 width=49) (actual time=85.630..85.636 rows=63.00 loops=3)
+                    Sort Key: t.created_at, t.transaction_id
+                    Sort Method: quicksort  Memory: 31kB
+                    Buffers: shared hit=15711 read=1516
+                    Worker 0:  Sort Method: quicksort  Memory: 28kB
+                    Worker 1:  Sort Method: quicksort  Memory: 27kB
+                    ->  Parallel Seq Scan on transactions t  (cost=0.00..23635.58 rows=11 width=49) (actual time=3.223..85.391 rows=63.00 loops=3)
+                          Filter: ((wallet_id = 6645) AND ((status)::text = 'completed'::text))
+                          Rows Removed by Filter: 346635
+                          Buffers: shared hit=15619 read=1516
+Planning Time: 0.348 ms
+Execution Time: 166.973 ms
