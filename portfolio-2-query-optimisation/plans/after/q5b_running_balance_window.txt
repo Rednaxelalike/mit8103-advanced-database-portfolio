@@ -1,0 +1,41 @@
+Q5b. Running balance, rewritten (window function): wallet 6645, September 2026
+
+Query:
+    SELECT created_at, reference, transaction_type, amount, balance_after
+    FROM (
+        SELECT t.created_at, t.transaction_id, t.reference, t.transaction_type, t.amount,
+               sum(CASE WHEN t.transaction_type IN ('funding', 'transfer_in', 'reversal')
+                        THEN t.amount ELSE -t.amount END)
+                   OVER (ORDER BY t.created_at, t.transaction_id
+                         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance_after
+        FROM transactions t
+        WHERE t.wallet_id = 6645
+          AND t.status = 'completed'
+    ) s
+    WHERE created_at >= '2026-09-01 00:00+01'
+      AND created_at <  '2026-10-01 00:00+01'
+    ORDER BY created_at, transaction_id
+
+Execution time of 5 runs (ms): 0.730, 0.646, 0.576, 0.569, 0.571
+Median: 0.576 ms (run 3). The plan of that run follows.
+
+Subquery Scan on s  (cost=7.84..1038.37 rows=50 width=81) (actual time=0.444..0.542 rows=29.00 loops=1)
+  Filter: ((s.created_at >= '2026-09-01 00:00:00+01'::timestamp with time zone) AND (s.created_at < '2026-10-01 00:00:00+01'::timestamp with time zone))
+  Rows Removed by Filter: 160
+  Buffers: shared hit=192
+  ->  WindowAgg  (cost=7.84..1034.23 rows=276 width=81) (actual time=0.080..0.519 rows=189.00 loops=1)
+        Window: w1 AS (ORDER BY t.created_at, t.transaction_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        Storage: Memory  Maximum Storage: 17kB
+        Buffers: shared hit=192
+        ->  Incremental Sort  (cost=4.11..1027.67 rows=276 width=49) (actual time=0.071..0.296 rows=189.00 loops=1)
+              Sort Key: t.created_at, t.transaction_id
+              Presorted Key: t.created_at
+              Full-sort Groups: 6  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+              Buffers: shared hit=192
+              ->  Index Scan using transactions_wallet_id_created_at_idx on transactions t  (cost=0.42..1015.25 rows=276 width=49) (actual time=0.014..0.226 rows=189.00 loops=1)
+                    Index Cond: (wallet_id = 6645)
+                    Filter: ((status)::text = 'completed'::text)
+                    Index Searches: 1
+                    Buffers: shared hit=192
+Planning Time: 0.215 ms
+Execution Time: 0.576 ms

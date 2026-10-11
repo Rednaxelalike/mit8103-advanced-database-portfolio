@@ -1,0 +1,33 @@
+Q2. Monthly totals by transaction type: July to September 2026
+
+Query:
+    SELECT date_trunc('month', created_at)::date AS month,
+           transaction_type,
+           count(*)    AS row_count,
+           sum(amount) AS total_ngn
+    FROM transactions
+    WHERE status = 'completed'
+      AND created_at >= '2026-07-01 00:00+01'
+      AND created_at <  '2026-10-01 00:00+01'
+    GROUP BY 1, 2
+    ORDER BY 1, 2
+
+Execution time of 5 runs (ms): 682.349, 661.760, 787.824, 1553.128, 1486.684
+Median: 787.824 ms (run 3). The plan of that run follows.
+
+GroupAggregate  (cost=90590.42..104966.64 rows=457652 width=57) (actual time=506.303..767.390 rows=15.00 loops=1)
+  Group Key: ((date_trunc('month'::text, created_at))::date), transaction_type
+  Buffers: shared hit=4447, temp read=2122 written=2130
+  ->  Sort  (cost=90590.42..91863.88 rows=509385 width=23) (actual time=497.928..619.489 rows=508955.00 loops=1)
+        Sort Key: ((date_trunc('month'::text, created_at))::date), transaction_type
+        Sort Method: external merge  Disk: 16976kB
+        Buffers: shared hit=4447, temp read=2122 written=2130
+        ->  Index Only Scan using transactions_created_at_covering_idx on transactions  (cost=0.42..31857.30 rows=509385 width=23) (actual time=0.023..253.952 rows=508955.00 loops=1)
+              Index Cond: ((created_at >= '2026-07-01 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+01'::timestamp with time zone))
+              Filter: ((status)::text = 'completed'::text)
+              Rows Removed by Filter: 1461
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=4447
+Planning Time: 0.186 ms
+Execution Time: 787.824 ms

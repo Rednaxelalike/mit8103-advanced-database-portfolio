@@ -1,0 +1,38 @@
+Q7. Held-transfer review queue: the 25 oldest pending transfers
+
+Query:
+    SELECT t.transfer_id, t.reference, t.created_at, t.amount,
+           c.first_name || ' ' || c.last_name AS sender, c.kyc_tier,
+           round(extract(epoch FROM TIMESTAMPTZ '2026-10-09 00:00+01' - t.created_at) / 3600, 1)
+               AS hours_waiting
+    FROM transfers t
+    JOIN wallets w   ON w.wallet_id = t.sender_wallet_id
+    JOIN customers c ON c.customer_id = w.customer_id
+    WHERE t.status = 'pending'
+    ORDER BY t.created_at
+    LIMIT 25
+
+Execution time of 5 runs (ms): 0.211, 1.815, 0.230, 0.380, 0.202
+Median: 0.230 ms (run 3). The plan of that run follows.
+
+Limit  (cost=0.72..197.43 rows=25 width=102) (actual time=0.025..0.199 rows=25.00 loops=1)
+  Buffers: shared hit=165
+  ->  Nested Loop  (cost=0.72..1149.49 rows=146 width=102) (actual time=0.024..0.195 rows=25.00 loops=1)
+        Buffers: shared hit=165
+        ->  Nested Loop  (cost=0.43..1093.47 rows=146 width=44) (actual time=0.014..0.096 rows=25.00 loops=1)
+              Buffers: shared hit=90
+              ->  Index Scan using transfers_pending_created_at_idx on transfers t  (cost=0.14..16.58 rows=146 width=44) (actual time=0.007..0.019 rows=25.00 loops=1)
+                    Index Searches: 1
+                    Buffers: shared hit=15
+              ->  Index Scan using wallets_pkey on wallets w  (cost=0.29..7.38 rows=1 width=16) (actual time=0.002..0.002 rows=1.00 loops=25)
+                    Index Cond: (wallet_id = t.sender_wallet_id)
+                    Index Searches: 25
+                    Buffers: shared hit=75
+        ->  Index Scan using customers_pkey on customers c  (cost=0.29..0.37 rows=1 width=22) (actual time=0.002..0.002 rows=1.00 loops=25)
+              Index Cond: (customer_id = w.customer_id)
+              Index Searches: 25
+              Buffers: shared hit=75
+Planning:
+  Buffers: shared hit=18
+Planning Time: 0.593 ms
+Execution Time: 0.230 ms
