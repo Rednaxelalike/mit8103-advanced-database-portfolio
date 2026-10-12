@@ -1,7 +1,8 @@
 -- =====================================================================
 -- Portfolio 2: Query processing and optimisation
 -- 03_indexes.sql  Adds four indexes, each aimed at queries in
---                 02_queries.sql, refreshes the planner's statistics and
+--                 02_queries.sql, refreshes the planner's statistics,
+--                 adds extended statistics for Q2's grouping, and
 --                 measures what the indexes cost: disk space, and slower
 --                 bulk inserts into the ledger.
 --
@@ -11,7 +12,8 @@
 --        -f portfolio-2-query-optimisation/sql/03_indexes.sql
 -- Then run 02_queries.sql again with -v plan_dir=.../plans/after.
 --
--- Re-runnable: the four indexes are dropped first and built again, and
+-- Re-runnable: the four indexes and the statistics object are dropped
+-- first and built again, and
 -- the insert test works on a scratch copy of the ledger that is dropped
 -- at the end. No data changes. It takes about three minutes, most of it
 -- the insert test.
@@ -21,6 +23,7 @@
 --   2. transfers (created_at) WHERE pending     partial index:    Q7
 --   3. transactions (created_at) INCLUDE (...)  covering index:   Q2, Q3
 --   4. customers (lower(email)), UNIQUE         expression index: Q8
+-- Plus one extended-statistics object (step 5), for Q2's group estimate.
 -- Q4 and Q6 get no index of their own; results/performance.md explains
 -- what happened to their plans.
 --
@@ -35,6 +38,7 @@ DROP INDEX IF EXISTS transactions_wallet_id_created_at_idx,
                      transfers_pending_created_at_idx,
                      transactions_created_at_covering_idx,
                      customers_lower_email_key;
+DROP STATISTICS IF EXISTS transactions_month_type_stats;
 
 \echo
 \echo '=== Ledger indexes before Portfolio 2 (primary key and unique keys only) ==='
@@ -116,6 +120,92 @@ CREATE UNIQUE INDEX customers_lower_email_key
 -- index-only scans.
 -- ---------------------------------------------------------------------
 VACUUM (ANALYZE) transactions, transfers, customers;
+
+-- =====================================================================
+-- 5. Extended statistics for the monthly totals (Q2).
+--    The "before" plan of Q2 showed the planner expecting 452,532 groups
+--    for month x transaction type when there are 15. PostgreSQL keeps
+--    statistics on columns, not on date_trunc('month', created_at), so
+--    it has to guess how many distinct months there are, and it guesses
+--    high. Expecting that many groups, it sorts half a million rows on
+--    disk instead of using a small in-memory hash table.
+--    CREATE STATISTICS ... (ndistinct) tells ANALYZE to count the
+--    distinct values of exactly the expression Q2 groups by, together
+--    with transaction_type. It is not an index: it takes no space in the
+--    table's pages and adds no work to inserts, only a little to ANALYZE.
+--    The expression must match Q2's GROUP BY exactly, including the
+--    ::date cast, or the planner will not use the statistics.
+--
+--    Q2 runs five times with the indexes alone, then five times with the
+--    statistics added, so the log shows what each fix contributes. The
+--    query text is the same as in 02_queries.sql.
+-- =====================================================================
+
+-- Runs p_sql p_runs times under EXPLAIN (ANALYZE, BUFFERS) and returns
+-- the time of every run, the median, and the median run's plan.
+CREATE OR REPLACE FUNCTION pg_temp.median_plan(p_sql text, p_runs int DEFAULT 5)
+RETURNS SETOF text
+LANGUAGE plpgsql AS $$
+DECLARE
+    plan_line  text;
+    plan_text  text;
+    exec_ms    numeric;
+    times      numeric[] := '{}';
+    plans      text[]    := '{}';
+    median_run int;
+BEGIN
+    FOR run IN 1 .. p_runs LOOP
+        plan_text := '';
+        FOR plan_line IN EXECUTE 'EXPLAIN (ANALYZE, BUFFERS) ' || p_sql LOOP
+            plan_text := plan_text || plan_line || E'\n';
+            IF plan_line LIKE 'Execution Time:%' THEN
+                exec_ms := substring(plan_line FROM '([0-9.]+) ms')::numeric;
+            END IF;
+        END LOOP;
+        times := times || exec_ms;
+        plans := plans || plan_text;
+    END LOOP;
+
+    -- The median run is the middle one when the runs are sorted by time.
+    SELECT r INTO median_run
+    FROM unnest(times) WITH ORDINALITY AS u(ms, r)
+    ORDER BY ms, r
+    OFFSET (p_runs - 1) / 2
+    LIMIT 1;
+
+    RETURN NEXT format('Execution time of %s runs (ms): %s', p_runs, array_to_string(times, ', '));
+    RETURN NEXT format('Median: %s ms (run %s). The plan of that run follows.',
+                       times[median_run], median_run);
+    RETURN NEXT '';
+    RETURN QUERY SELECT line
+                 FROM regexp_split_to_table(rtrim(plans[median_run], E'\n'), E'\n') AS line;
+END
+$$;
+
+\set q2_sql 'SELECT date_trunc(''month'', created_at)::date AS month, transaction_type, count(*) AS row_count, sum(amount) AS total_ngn FROM transactions WHERE status = ''completed'' AND created_at >= ''2026-07-01 00:00+01'' AND created_at < ''2026-10-01 00:00+01'' GROUP BY 1, 2 ORDER BY 1, 2'
+
+\pset format unaligned
+\pset tuples_only on
+\echo
+\echo '=== Q2 with the new indexes, before the extended statistics ==='
+SELECT pg_temp.median_plan(:'q2_sql');
+
+CREATE STATISTICS transactions_month_type_stats (ndistinct)
+    ON ((date_trunc('month', created_at))::date), transaction_type
+    FROM transactions;
+ANALYZE transactions;
+
+\echo
+\echo '=== Q2 with the new indexes and the extended statistics ==='
+SELECT pg_temp.median_plan(:'q2_sql');
+\pset tuples_only off
+\pset format aligned
+
+\echo
+\echo '=== What ANALYZE counted: distinct (month, type) pairs in the sample ==='
+SELECT statistics_name, n_distinct
+FROM pg_stats_ext
+WHERE statistics_name = 'transactions_month_type_stats';
 
 -- =====================================================================
 -- Cost 1: disk space.

@@ -12,27 +12,27 @@ Query:
     ORDER BY t.created_at
     LIMIT 25
 
-Execution time of 5 runs (ms): 0.211, 1.815, 0.230, 0.380, 0.202
-Median: 0.230 ms (run 3). The plan of that run follows.
+Execution time of 5 runs (ms): 0.340, 0.338, 0.699, 0.233, 0.271
+Median: 0.338 ms (run 2). The plan of that run follows.
 
-Limit  (cost=0.72..197.43 rows=25 width=102) (actual time=0.025..0.199 rows=25.00 loops=1)
+Limit  (cost=0.72..202.54 rows=25 width=102) (actual time=0.029..0.295 rows=25.00 loops=1)
   Buffers: shared hit=165
-  ->  Nested Loop  (cost=0.72..1149.49 rows=146 width=102) (actual time=0.024..0.195 rows=25.00 loops=1)
+  ->  Nested Loop  (cost=0.72..912.94 rows=113 width=102) (actual time=0.028..0.291 rows=25.00 loops=1)
         Buffers: shared hit=165
-        ->  Nested Loop  (cost=0.43..1093.47 rows=146 width=44) (actual time=0.014..0.096 rows=25.00 loops=1)
+        ->  Nested Loop  (cost=0.43..869.59 rows=113 width=44) (actual time=0.017..0.153 rows=25.00 loops=1)
               Buffers: shared hit=90
-              ->  Index Scan using transfers_pending_created_at_idx on transfers t  (cost=0.14..16.58 rows=146 width=44) (actual time=0.007..0.019 rows=25.00 loops=1)
+              ->  Index Scan using transfers_pending_created_at_idx on transfers t  (cost=0.14..14.84 rows=113 width=44) (actual time=0.009..0.027 rows=25.00 loops=1)
                     Index Searches: 1
                     Buffers: shared hit=15
-              ->  Index Scan using wallets_pkey on wallets w  (cost=0.29..7.38 rows=1 width=16) (actual time=0.002..0.002 rows=1.00 loops=25)
+              ->  Index Scan using wallets_pkey on wallets w  (cost=0.29..7.56 rows=1 width=16) (actual time=0.003..0.003 rows=1.00 loops=25)
                     Index Cond: (wallet_id = t.sender_wallet_id)
                     Index Searches: 25
                     Buffers: shared hit=75
-        ->  Index Scan using customers_pkey on customers c  (cost=0.29..0.37 rows=1 width=22) (actual time=0.002..0.002 rows=1.00 loops=25)
+        ->  Index Scan using customers_pkey on customers c  (cost=0.29..0.37 rows=1 width=22) (actual time=0.003..0.003 rows=1.00 loops=25)
               Index Cond: (customer_id = w.customer_id)
               Index Searches: 25
               Buffers: shared hit=75
 Planning:
   Buffers: shared hit=18
-Planning Time: 0.593 ms
-Execution Time: 0.230 ms
+Planning Time: 0.538 ms
+Execution Time: 0.338 ms

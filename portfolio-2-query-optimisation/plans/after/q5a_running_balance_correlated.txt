@@ -16,26 +16,26 @@ Query:
       AND t.created_at <  '2026-10-01 00:00+01'
     ORDER BY t.created_at, t.transaction_id
 
-Execution time of 5 runs (ms): 8.615, 9.619, 6.911, 9.823, 6.844
-Median: 8.615 ms (run 1). The plan of that run follows.
+Execution time of 5 runs (ms): 4.503, 7.982, 6.122, 6.872, 7.308
+Median: 6.872 ms (run 4). The plan of that run follows.
 
-Incremental Sort  (cost=42.06..2083.76 rows=50 width=81) (actual time=8.554..8.557 rows=29.00 loops=1)
+Incremental Sort  (cost=42.71..212.03 rows=5 width=81) (actual time=6.821..6.823 rows=29.00 loops=1)
   Sort Key: t.created_at, t.transaction_id
   Presorted Key: t.created_at
   Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
   Buffers: shared hit=4991
-  ->  Index Scan using transactions_wallet_id_created_at_idx on transactions t  (cost=0.42..2081.51 rows=50 width=81) (actual time=0.231..8.525 rows=29.00 loops=1)
+  ->  Index Scan using transactions_wallet_id_created_at_idx on transactions t  (cost=0.42..211.80 rows=5 width=81) (actual time=0.324..6.796 rows=29.00 loops=1)
         Index Cond: ((wallet_id = 6645) AND (created_at >= '2026-09-01 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+01'::timestamp with time zone))
         Filter: ((status)::text = 'completed'::text)
         Index Searches: 1
         Buffers: shared hit=4991
         SubPlan 1
-          ->  Aggregate  (cost=37.86..37.87 rows=1 width=32) (actual time=0.288..0.288 rows=1.00 loops=29)
+          ->  Aggregate  (cost=37.74..37.75 rows=1 width=32) (actual time=0.230..0.231 rows=1.00 loops=29)
                 Buffers: shared hit=4959
-                ->  Index Scan using transactions_wallet_id_created_at_idx on transactions e  (cost=0.42..37.78 rows=9 width=19) (actual time=0.007..0.197 rows=168.00 loops=29)
+                ->  Index Scan using transactions_wallet_id_created_at_idx on transactions e  (cost=0.42..37.66 rows=9 width=19) (actual time=0.005..0.158 rows=168.00 loops=29)
                       Index Cond: ((wallet_id = t.wallet_id) AND (created_at <= t.created_at))
                       Filter: (((status)::text = 'completed'::text) AND (ROW(created_at, transaction_id) <= ROW(t.created_at, t.transaction_id)))
                       Index Searches: 29
                       Buffers: shared hit=4959
-Planning Time: 0.256 ms
-Execution Time: 8.615 ms
+Planning Time: 0.343 ms
+Execution Time: 6.872 ms

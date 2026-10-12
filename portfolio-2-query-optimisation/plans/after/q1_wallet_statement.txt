@@ -11,17 +11,17 @@ Query:
       AND t.created_at <  '2026-10-01 00:00+01'
     ORDER BY t.created_at, t.transaction_id
 
-Execution time of 5 runs (ms): 0.069, 0.092, 0.047, 0.047, 0.043
-Median: 0.047 ms (run 4). The plan of that run follows.
+Execution time of 5 runs (ms): 0.079, 0.084, 0.049, 0.046, 0.077
+Median: 0.077 ms (run 5). The plan of that run follows.
 
-Incremental Sort  (cost=4.19..190.27 rows=50 width=104) (actual time=0.033..0.035 rows=29.00 loops=1)
+Incremental Sort  (cost=4.96..23.28 rows=5 width=104) (actual time=0.053..0.054 rows=29.00 loops=1)
   Sort Key: created_at, transaction_id
   Presorted Key: created_at
   Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
   Buffers: shared hit=32
-  ->  Index Scan using transactions_wallet_id_created_at_idx on transactions t  (cost=0.42..188.02 rows=50 width=104) (actual time=0.008..0.022 rows=29.00 loops=1)
+  ->  Index Scan using transactions_wallet_id_created_at_idx on transactions t  (cost=0.42..23.05 rows=5 width=104) (actual time=0.018..0.040 rows=29.00 loops=1)
         Index Cond: ((wallet_id = 6645) AND (created_at >= '2026-09-01 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+01'::timestamp with time zone))
         Index Searches: 1
         Buffers: shared hit=32
-Planning Time: 0.077 ms
-Execution Time: 0.047 ms
+Planning Time: 0.549 ms
+Execution Time: 0.077 ms

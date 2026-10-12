@@ -1,9 +1,7 @@
 SET
-psql:portfolio-2-query-optimisation/sql/03_indexes.sql:37: NOTICE:  index "transactions_wallet_id_created_at_idx" does not exist, skipping
-psql:portfolio-2-query-optimisation/sql/03_indexes.sql:37: NOTICE:  index "transfers_pending_created_at_idx" does not exist, skipping
-psql:portfolio-2-query-optimisation/sql/03_indexes.sql:37: NOTICE:  index "transactions_created_at_covering_idx" does not exist, skipping
-psql:portfolio-2-query-optimisation/sql/03_indexes.sql:37: NOTICE:  index "customers_lower_email_key" does not exist, skipping
 DROP INDEX
+psql:portfolio-2-query-optimisation/sql/03_indexes.sql:41: NOTICE:  statistics object "transactions_month_type_stats" does not exist, skipping
+DROP STATISTICS
 
 === Ledger indexes before Portfolio 2 (primary key and unique keys only) ===
              indexname             | index_size 
@@ -16,21 +14,84 @@ DROP INDEX
 === Building the four indexes ===
 Timing is on.
 CREATE INDEX
-Time: 2284.680 ms (00:02.285)
+Time: 1572.825 ms (00:01.573)
 Timing is off.
 Timing is on.
 CREATE INDEX
-Time: 110.012 ms
+Time: 214.000 ms
 Timing is off.
 Timing is on.
 CREATE INDEX
-Time: 4157.225 ms (00:04.157)
+Time: 2640.619 ms (00:02.641)
 Timing is off.
 Timing is on.
 CREATE INDEX
-Time: 742.009 ms
+Time: 470.880 ms
 Timing is off.
 VACUUM
+CREATE FUNCTION
+Output format is unaligned.
+
+=== Q2 with the new indexes, before the extended statistics ===
+Execution time of 5 runs (ms): 1052.179, 659.521, 825.088, 683.414, 875.041
+Median: 825.088 ms (run 3). The plan of that run follows.
+
+GroupAggregate  (cost=91626.00..106181.84 rows=463895 width=57) (actual time=596.517..815.052 rows=15.00 loops=1)
+  Group Key: ((date_trunc('month'::text, created_at))::date), transaction_type
+  Buffers: shared hit=4447, temp read=2122 written=2130
+  ->  Sort  (cost=91626.00..92913.53 rows=515014 width=23) (actual time=584.945..681.400 rows=508955.00 loops=1)
+        Sort Key: ((date_trunc('month'::text, created_at))::date), transaction_type
+        Sort Method: external merge  Disk: 16976kB
+        Buffers: shared hit=4447, temp read=2122 written=2130
+        ->  Index Only Scan using transactions_created_at_covering_idx on transactions  (cost=0.42..32202.97 rows=515014 width=23) (actual time=0.024..290.191 rows=508955.00 loops=1)
+              Index Cond: ((created_at >= '2026-07-01 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+01'::timestamp with time zone))
+              Filter: ((status)::text = 'completed'::text)
+              Rows Removed by Filter: 1461
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=4447
+Planning Time: 0.133 ms
+Execution Time: 825.088 ms
+CREATE STATISTICS
+ANALYZE
+
+=== Q2 with the new indexes and the extended statistics ===
+Execution time of 5 runs (ms): 472.115, 450.490, 458.376, 322.945, 362.577
+Median: 450.490 ms (run 2). The plan of that run follows.
+
+Finalize GroupAggregate  (cost=28926.30..28945.64 rows=59 width=57) (actual time=441.457..450.298 rows=15.00 loops=1)
+  Group Key: ((date_trunc('month'::text, created_at))::date), transaction_type
+  Buffers: shared hit=4623 read=12544
+  ->  Gather Merge  (cost=28926.30..28942.84 rows=142 width=57) (actual time=441.438..450.189 rows=45.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=4623 read=12544
+        ->  Sort  (cost=27926.27..27926.42 rows=59 width=57) (actual time=389.428..389.430 rows=15.00 loops=3)
+              Sort Key: ((date_trunc('month'::text, created_at))::date), transaction_type
+              Sort Method: quicksort  Memory: 26kB
+              Buffers: shared hit=4623 read=12544
+              Worker 0:  Sort Method: quicksort  Memory: 26kB
+              Worker 1:  Sort Method: quicksort  Memory: 26kB
+              ->  Partial HashAggregate  (cost=27923.51..27924.54 rows=59 width=57) (actual time=389.334..389.346 rows=15.00 loops=3)
+                    Group Key: (date_trunc('month'::text, created_at))::date, transaction_type
+                    Batches: 1  Memory Usage: 32kB
+                    Buffers: shared hit=4591 read=12544
+                    Worker 0:  Batches: 1  Memory Usage: 32kB
+                    Worker 1:  Batches: 1  Memory Usage: 32kB
+                    ->  Parallel Seq Scan on transactions  (cost=0.00..25787.18 rows=213633 width=23) (actual time=31.480..263.645 rows=169651.67 loops=3)
+                          Filter: ((created_at >= '2026-07-01 00:00:00+01'::timestamp with time zone) AND (created_at < '2026-10-01 00:00:00+01'::timestamp with time zone) AND ((status)::text = 'completed'::text))
+                          Rows Removed by Filter: 177046
+                          Buffers: shared hit=4591 read=12544
+Planning Time: 0.517 ms
+Execution Time: 450.490 ms
+Output format is aligned.
+
+=== What ANALYZE counted: distinct (month, type) pairs in the sample ===
+        statistics_name        |  n_distinct   
+-------------------------------+---------------
+ transactions_month_type_stats | {"4, -1": 59}
+(1 row)
+
 === Size of each new index next to its table ===
               index_name               |  table_name  | index_size | table_size | index_as_pct_of_table 
 ---------------------------------------+--------------+------------+------------+-----------------------
@@ -50,14 +111,14 @@ VACUUM
  transactions_wallet_id_created_at_idx | 31 MB
 (5 rows)
 
-psql:portfolio-2-query-optimisation/sql/03_indexes.sql:161: NOTICE:  table "p2_insert_test" does not exist, skipping
+psql:portfolio-2-query-optimisation/sql/03_indexes.sql:251: NOTICE:  table "p2_insert_test" does not exist, skipping
 DROP TABLE
 === Insert test: copying the ledger ===
 Timing is on.
 SELECT 1040093
-Time: 5590.335 ms (00:05.590)
+Time: 8206.725 ms (00:08.207)
 ALTER TABLE
-Time: 12083.505 ms (00:12.084)
+Time: 8985.805 ms (00:08.986)
 Timing is off.
 SET
 DROP TABLE
@@ -69,35 +130,35 @@ VACUUM
 CHECKPOINT
  run_1_ms 
 ----------
-   3699.1
+   2574.0
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_2_ms 
 ----------
-   3710.2
+   3074.3
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_3_ms 
 ----------
-   3606.1
+   3259.2
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_4_ms 
 ----------
-   3555.5
+   2601.3
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_5_ms 
 ----------
-   3666.1
+   2086.2
 (1 row)
 
 === Insert test: adding the two new ledger indexes to the copy ===
@@ -109,49 +170,49 @@ VACUUM
 CHECKPOINT
  run_1_ms 
 ----------
-   5794.6
+   3661.5
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_2_ms 
 ----------
-   5266.5
+   3327.7
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_3_ms 
 ----------
-   5144.7
+   3251.6
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_4_ms 
 ----------
-   4997.8
+   3440.7
 (1 row)
 
 VACUUM
 CHECKPOINT
  run_5_ms 
 ----------
-   5016.0
+   3483.0
 (1 row)
 
 DROP TABLE
 === Time to insert 100,000 ledger rows (5 runs each, ms) ===
        indexes       |                runs_ms                 | median_ms 
 ---------------------+----------------------------------------+-----------
- without new indexes | 3699.1, 3710.2, 3606.1, 3555.5, 3666.1 |    3666.1
- with new indexes    | 5794.6, 5266.5, 5144.7, 4997.8, 5016.0 |    5144.7
+ without new indexes | 2574.0, 3074.3, 3259.2, 2601.3, 2086.2 |    2601.3
+ with new indexes    | 3661.5, 3327.7, 3251.6, 3440.7, 3483.0 |    3440.7
 (2 rows)
 
 === Slowdown from the two new ledger indexes (medians) ===
  pct_slower 
 ------------
-       40.3
+       32.3
 (1 row)
 
 === The real ledger is unchanged ===
