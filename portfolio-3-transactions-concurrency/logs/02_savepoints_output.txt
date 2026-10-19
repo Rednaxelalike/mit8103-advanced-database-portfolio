@@ -1,0 +1,263 @@
+-- Captured 2026-10-19 07:27 +0100 on PostgreSQL 18.6, database proclus
+-- Command: psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-3-transactions-concurrency/sql/02_savepoints.sql
+
+BEGIN
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMIT
+BEGIN
+TRUNCATE TABLE
+INSERT 0 20
+INSERT 0 12
+INSERT 0 31
+INSERT 0 25
+INSERT 0 12
+INSERT 0 47
+INSERT 0 18
+INSERT 0 37
+ customers | merchants | kyc_documents | wallets | transfers 
+-----------+-----------+---------------+---------+-----------
+        20 |        12 |            31 |      25 |        12
+(1 row)
+
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Balance audit passed: all 25 wallet balances equal their ledger totals
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Transfer audit passed: all 18 transfer ledger rows match their transfer
+DO
+COMMIT
+  table_name   | row_count 
+---------------+-----------
+ customers     |        20
+ merchants     |        12
+ kyc_documents |        31
+ wallets       |        25
+ transfers     |        12
+ transactions  |        47
+ beneficiaries |        18
+ audit_log     |        37
+(8 rows)
+
+
+=== Before the batch ===
+SELECT w.wallet_id, c.first_name || ' ' || c.last_name AS owner, w.balance
+FROM wallets w JOIN customers c USING (customer_id)
+WHERE w.wallet_id IN (17, 10, 14, 20)
+ORDER BY w.balance DESC, w.wallet_id;
+ wallet_id |      owner      |  balance  
+-----------+-----------------+-----------
+        17 | Segun Afolabi   | 225000.00
+        10 | Chiamaka Obi    |      0.00
+        14 | Hauwa Ibrahim   |      0.00
+        20 | Folake Akinwale |      0.00
+(4 rows)
+
+BEGIN;
+BEGIN
+
+=== Payment 1: NGN 100,000.00 from wallet 17 to wallet 10 ===
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610190001', 17, 10, 100000.00, 'October allowance', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          13 | TRF2610190001 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance - 100000.00
+WHERE wallet_id = 17
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+        17 | 125000.00
+(1 row)
+
+UPDATE 1
+UPDATE wallets SET balance = balance + 100000.00
+WHERE wallet_id = 10
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+        10 | 100000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+SELECT v.reference, v.wallet_id, v.transaction_type, 100000.00, t.transfer_id, 'October allowance'
+FROM transfers t
+CROSS JOIN (VALUES ('TXN2610190001', 17, 'transfer_out'),
+                   ('TXN2610190002', 10, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+WHERE t.reference = 'TRF2610190001'
+RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount   
+----------------+---------------+-----------+------------------+-----------
+             48 | TXN2610190001 |        17 | transfer_out     | 100000.00
+             49 | TXN2610190002 |        10 | transfer_in      | 100000.00
+(2 rows)
+
+INSERT 0 2
+
+=== Payment 2: NGN 150,000.00 from wallet 17 to wallet 14 ===
+SAVEPOINT before_payment_2;
+SAVEPOINT
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610190002', 17, 14, 150000.00, 'October allowance', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          14 | TRF2610190002 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance - 150000.00
+WHERE wallet_id = 17
+RETURNING wallet_id, balance;
+psql:portfolio-3-transactions-concurrency/sql/02_savepoints.sql:90: ERROR:  new row for relation "wallets" violates check constraint "wallets_balance_non_negative"
+DETAIL:  Failing row contains (17, 17, 5179351648, main, -25000.00, active, 2026-08-17 09:38:00+01).
+SELECT balance FROM wallets WHERE wallet_id = 17;
+psql:portfolio-3-transactions-concurrency/sql/02_savepoints.sql:93: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK TO SAVEPOINT before_payment_2;
+ROLLBACK
+SELECT balance FROM wallets WHERE wallet_id = 17;
+  balance  
+-----------
+ 125000.00
+(1 row)
+
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, failure_reason, processed_at)
+VALUES ('TRF2610190002', 17, 14, 150000.00, 'October allowance', 'failed',
+        'Insufficient funds', now())
+RETURNING transfer_id, reference, status, failure_reason;
+ transfer_id |   reference   | status |   failure_reason   
+-------------+---------------+--------+--------------------
+          15 | TRF2610190002 | failed | Insufficient funds
+(1 row)
+
+INSERT 0 1
+INSERT INTO audit_log (entity_type, entity_id, action, actor_type, actor_ref, details)
+SELECT 'transfer', transfer_id, 'failed', 'system', 'transfer-engine',
+       'Insufficient funds: balance NGN 125000.00, requested NGN 150000.00'
+FROM transfers
+WHERE reference = 'TRF2610190002'
+RETURNING audit_id, entity_type, entity_id, action, details;
+ audit_id | entity_type | entity_id | action |                              details                               
+----------+-------------+-----------+--------+--------------------------------------------------------------------
+       38 | transfer    |        15 | failed | Insufficient funds: balance NGN 125000.00, requested NGN 150000.00
+(1 row)
+
+INSERT 0 1
+
+=== Payment 3: NGN 50,000.00 from wallet 17 to wallet 20 ===
+SAVEPOINT before_payment_3;
+SAVEPOINT
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610190003', 17, 20, 50000.00, 'October allowance', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          16 | TRF2610190003 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance - 50000.00
+WHERE wallet_id = 17
+RETURNING wallet_id, balance;
+ wallet_id | balance  
+-----------+----------
+        17 | 75000.00
+(1 row)
+
+UPDATE 1
+UPDATE wallets SET balance = balance + 50000.00
+WHERE wallet_id = 20
+RETURNING wallet_id, balance;
+ wallet_id | balance  
+-----------+----------
+        20 | 50000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+SELECT v.reference, v.wallet_id, v.transaction_type, 50000.00, t.transfer_id, 'October allowance'
+FROM transfers t
+CROSS JOIN (VALUES ('TXN2610190003', 17, 'transfer_out'),
+                   ('TXN2610190004', 20, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+WHERE t.reference = 'TRF2610190003'
+RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount  
+----------------+---------------+-----------+------------------+----------
+             50 | TXN2610190003 |        17 | transfer_out     | 50000.00
+             51 | TXN2610190004 |        20 | transfer_in      | 50000.00
+(2 rows)
+
+INSERT 0 2
+RELEASE SAVEPOINT before_payment_3;
+RELEASE
+COMMIT;
+COMMIT
+
+=== After COMMIT ===
+SELECT wallet_id, balance FROM wallets
+WHERE wallet_id IN (17, 10, 14, 20)
+ORDER BY wallet_id;
+ wallet_id |  balance  
+-----------+-----------
+        10 | 100000.00
+        14 |      0.00
+        17 |  75000.00
+        20 |  50000.00
+(4 rows)
+
+SELECT t.transfer_id, t.reference, t.receiver_wallet_id, t.amount, t.status,
+       t.failure_reason, count(x.transaction_id) AS ledger_rows
+FROM transfers t
+LEFT JOIN transactions x USING (transfer_id)
+WHERE t.reference LIKE 'TRF261019%'
+GROUP BY t.transfer_id
+ORDER BY t.transfer_id;
+ transfer_id |   reference   | receiver_wallet_id |  amount   |  status   |   failure_reason   | ledger_rows 
+-------------+---------------+--------------------+-----------+-----------+--------------------+-------------
+          13 | TRF2610190001 |                 10 | 100000.00 | completed |                    |           2
+          15 | TRF2610190002 |                 14 | 150000.00 | failed    | Insufficient funds |           0
+          16 | TRF2610190003 |                 20 |  50000.00 | completed |                    |           2
+(3 rows)
+
+
+=== Balance audit: every stored balance still equals its ledger total ===
+SELECT count(*) AS wallets_checked,
+       count(*) FILTER (WHERE w.balance <> coalesce(l.ledger_balance, 0)) AS mismatches
+FROM wallets w
+LEFT JOIN (
+    SELECT wallet_id,
+           sum(CASE WHEN transaction_type IN ('funding', 'transfer_in', 'reversal')
+                    THEN amount ELSE -amount END) AS ledger_balance
+    FROM transactions
+    WHERE status = 'completed'
+    GROUP BY wallet_id
+) l USING (wallet_id);
+ wallets_checked | mismatches 
+-----------------+------------
+              25 |          0
+(1 row)
+
