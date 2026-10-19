@@ -1,0 +1,215 @@
+-- Captured 2026-10-19 07:27 +0100 on PostgreSQL 18.6, database proclus
+-- Command: psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-3-transactions-concurrency/sql/01_commit_rollback.sql
+
+BEGIN
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMIT
+BEGIN
+TRUNCATE TABLE
+INSERT 0 20
+INSERT 0 12
+INSERT 0 31
+INSERT 0 25
+INSERT 0 12
+INSERT 0 47
+INSERT 0 18
+INSERT 0 37
+ customers | merchants | kyc_documents | wallets | transfers 
+-----------+-----------+---------------+---------+-----------
+        20 |        12 |            31 |      25 |        12
+(1 row)
+
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Balance audit passed: all 25 wallet balances equal their ledger totals
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Transfer audit passed: all 18 transfer ledger rows match their transfer
+DO
+COMMIT
+  table_name   | row_count 
+---------------+-----------
+ customers     |        20
+ merchants     |        12
+ kyc_documents |        31
+ wallets       |        25
+ transfers     |        12
+ transactions  |        47
+ beneficiaries |        18
+ audit_log     |        37
+(8 rows)
+
+
+=== Part 1: a transfer that commits ===
+Oluwaseun Adeyemi (wallet 3) sends NGN 25,000.00 to Funmilayo Adebayo (wallet 6).
+
+SELECT w.wallet_id, c.first_name || ' ' || c.last_name AS owner, w.balance
+FROM wallets w JOIN customers c USING (customer_id)
+WHERE w.wallet_id IN (3, 6)
+ORDER BY w.wallet_id;
+ wallet_id |       owner       |  balance  
+-----------+-------------------+-----------
+         3 | Oluwaseun Adeyemi | 146800.00
+         6 | Funmilayo Adebayo |      0.00
+(2 rows)
+
+BEGIN;
+BEGIN
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610190001', 3, 6, 25000.00, 'Rent share', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          13 | TRF2610190001 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance - 25000.00
+WHERE wallet_id = 3
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         3 | 121800.00
+(1 row)
+
+UPDATE 1
+UPDATE wallets SET balance = balance + 25000.00
+WHERE wallet_id = 6
+RETURNING wallet_id, balance;
+ wallet_id | balance  
+-----------+----------
+         6 | 25000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+SELECT v.reference, v.wallet_id, v.transaction_type, 25000.00, t.transfer_id, 'Rent share'
+FROM transfers t
+CROSS JOIN (VALUES ('TXN2610190001', 3, 'transfer_out'),
+                   ('TXN2610190002', 6, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+WHERE t.reference = 'TRF2610190001'
+RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount  
+----------------+---------------+-----------+------------------+----------
+             48 | TXN2610190001 |         3 | transfer_out     | 25000.00
+             49 | TXN2610190002 |         6 | transfer_in      | 25000.00
+(2 rows)
+
+INSERT 0 2
+COMMIT;
+COMMIT
+SELECT wallet_id, balance FROM wallets WHERE wallet_id IN (3, 6) ORDER BY wallet_id;
+ wallet_id |  balance  
+-----------+-----------
+         3 | 121800.00
+         6 |  25000.00
+(2 rows)
+
+SELECT t.reference AS transfer, t.status, x.reference AS ledger_row, x.wallet_id,
+       x.transaction_type, x.amount
+FROM transfers t JOIN transactions x USING (transfer_id)
+WHERE t.reference = 'TRF2610190001'
+ORDER BY x.transaction_id;
+   transfer    |  status   |  ledger_row   | wallet_id | transaction_type |  amount  
+---------------+-----------+---------------+-----------+------------------+----------
+ TRF2610190001 | completed | TXN2610190001 |         3 | transfer_out     | 25000.00
+ TRF2610190001 | completed | TXN2610190002 |         6 | transfer_in      | 25000.00
+(2 rows)
+
+
+=== Part 2: a transfer that fails and rolls back ===
+Aisha Bello (wallet 2, balance NGN 23,500.00) tries to send NGN 50,000.00 to Emeka Nwosu (wallet 7).
+
+SELECT wallet_id, balance FROM wallets WHERE wallet_id IN (2, 7) ORDER BY wallet_id;
+ wallet_id | balance  
+-----------+----------
+         2 | 23500.00
+         7 | 65000.00
+(2 rows)
+
+SELECT (SELECT count(*) FROM transfers)    AS transfers,
+       (SELECT count(*) FROM transactions) AS ledger_rows;
+ transfers | ledger_rows 
+-----------+-------------
+        13 |          49
+(1 row)
+
+BEGIN;
+BEGIN
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610190002', 2, 7, 50000.00, 'School fees', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          14 | TRF2610190002 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance + 50000.00
+WHERE wallet_id = 7
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         7 | 115000.00
+(1 row)
+
+UPDATE 1
+UPDATE wallets SET balance = balance - 50000.00
+WHERE wallet_id = 2
+RETURNING wallet_id, balance;
+psql:portfolio-3-transactions-concurrency/sql/01_commit_rollback.sql:114: ERROR:  new row for relation "wallets" violates check constraint "wallets_balance_non_negative"
+DETAIL:  Failing row contains (2, 2, 5026193047, main, -26500.00, active, 2026-08-02 10:42:00+01).
+SELECT balance FROM wallets WHERE wallet_id = 7;
+psql:portfolio-3-transactions-concurrency/sql/01_commit_rollback.sql:118: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK;
+ROLLBACK
+SELECT wallet_id, balance FROM wallets WHERE wallet_id IN (2, 7) ORDER BY wallet_id;
+ wallet_id | balance  
+-----------+----------
+         2 | 23500.00
+         7 | 65000.00
+(2 rows)
+
+SELECT (SELECT count(*) FROM transfers)    AS transfers,
+       (SELECT count(*) FROM transactions) AS ledger_rows,
+       (SELECT count(*) FROM transfers WHERE reference = 'TRF2610190002') AS failed_transfer_rows;
+ transfers | ledger_rows | failed_transfer_rows 
+-----------+-------------+----------------------
+        13 |          49 |                    0
+(1 row)
+
+
+=== Balance audit: every stored balance still equals its ledger total ===
+SELECT count(*) AS wallets_checked,
+       count(*) FILTER (WHERE w.balance <> coalesce(l.ledger_balance, 0)) AS mismatches
+FROM wallets w
+LEFT JOIN (
+    SELECT wallet_id,
+           sum(CASE WHEN transaction_type IN ('funding', 'transfer_in', 'reversal')
+                    THEN amount ELSE -amount END) AS ledger_balance
+    FROM transactions
+    WHERE status = 'completed'
+    GROUP BY wallet_id
+) l USING (wallet_id);
+ wallets_checked | mismatches 
+-----------------+------------
+              25 |          0
+(1 row)
+
