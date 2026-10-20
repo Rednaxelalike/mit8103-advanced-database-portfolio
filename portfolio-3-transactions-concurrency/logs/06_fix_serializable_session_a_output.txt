@@ -1,0 +1,199 @@
+-- Captured 2026-10-20 17:13 +0100 on PostgreSQL 18.6, database proclus
+-- Command: portfolio-3-transactions-concurrency/run_two_sessions.ps1 06_fix_serializable, which runs session A as:
+--   psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -v start=<shared start time> -f portfolio-3-transactions-concurrency/sql/06_fix_serializable_session_a.sql
+
+BEGIN
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMIT
+BEGIN
+TRUNCATE TABLE
+INSERT 0 20
+INSERT 0 12
+INSERT 0 31
+INSERT 0 25
+INSERT 0 12
+INSERT 0 47
+INSERT 0 18
+INSERT 0 37
+ customers | merchants | kyc_documents | wallets | transfers 
+-----------+-----------+---------------+---------+-----------
+        20 |        12 |            31 |      25 |        12
+(1 row)
+
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Balance audit passed: all 25 wallet balances equal their ledger totals
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Transfer audit passed: all 18 transfer ledger rows match their transfer
+DO
+COMMIT
+  table_name   | row_count 
+---------------+-----------
+ customers     |        20
+ merchants     |        12
+ kyc_documents |        31
+ wallets       |        25
+ transfers     |        12
+ transactions  |        47
+ beneficiaries |        18
+ audit_log     |        37
+(8 rows)
+
+
+=== Session A: NGN 120,000.00 from wallet 5 to wallet 10, under SERIALIZABLE ===
+SELECT pg_temp.step(1);
+             step             
+------------------------------
+ step 1: session_a at t+1.0 s
+(1 row)
+
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+BEGIN
+SHOW transaction_isolation;
+ transaction_isolation 
+-----------------------
+ serializable
+(1 row)
+
+SELECT balance FROM wallets WHERE wallet_id = 5 
+Session A read the balance of wallet 5: 300000.00
+SELECT pg_temp.step(3);
+             step             
+------------------------------
+ step 3: session_a at t+3.0 s
+(1 row)
+
+UPDATE wallets SET balance = 300000.00 - 120000.00
+WHERE wallet_id = 5
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         5 | 180000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610200001', 5, 10, 120000.00, 'House rent', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          13 | TRF2610200001 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance + 120000.00
+WHERE wallet_id = 10
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+        10 | 120000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+SELECT v.reference, v.wallet_id, v.transaction_type, 120000.00, t.transfer_id, 'House rent'
+FROM transfers t
+CROSS JOIN (VALUES ('TXN2610200001', 5, 'transfer_out'),
+                   ('TXN2610200002', 10, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+WHERE t.reference = 'TRF2610200001'
+RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount   
+----------------+---------------+-----------+------------------+-----------
+             48 | TXN2610200001 |         5 | transfer_out     | 120000.00
+             49 | TXN2610200002 |        10 | transfer_in      | 120000.00
+(2 rows)
+
+INSERT 0 2
+SELECT pg_temp.step(4);
+             step             
+------------------------------
+ step 4: session_a at t+4.0 s
+(1 row)
+
+COMMIT;
+COMMIT
+SELECT pg_temp.step(6);
+             step             
+------------------------------
+ step 6: session_a at t+6.0 s
+(1 row)
+
+
+=== Result after both sessions have committed ===
+SELECT w.wallet_id, c.first_name || ' ' || c.last_name AS owner, w.balance
+FROM wallets w JOIN customers c USING (customer_id)
+WHERE w.wallet_id IN (5, 10, 14)
+ORDER BY w.wallet_id;
+ wallet_id |     owner     |  balance  
+-----------+---------------+-----------
+         5 | Ibrahim Musa  | 100000.00
+        10 | Chiamaka Obi  | 120000.00
+        14 | Hauwa Ibrahim |  80000.00
+(3 rows)
+
+SELECT t.transfer_id, t.reference, t.sender_wallet_id AS sender,
+       t.receiver_wallet_id AS receiver, t.amount, t.status,
+       count(x.transaction_id) AS ledger_rows
+FROM transfers t LEFT JOIN transactions x USING (transfer_id)
+WHERE t.reference IN ('TRF2610200001', 'TRF2610200002')
+GROUP BY t.transfer_id
+ORDER BY t.transfer_id;
+ transfer_id |   reference   | sender | receiver |  amount   |  status   | ledger_rows 
+-------------+---------------+--------+----------+-----------+-----------+-------------
+          13 | TRF2610200001 |      5 |       10 | 120000.00 | completed |           2
+          14 | TRF2610200002 |      5 |       14 |  80000.00 | completed |           2
+(2 rows)
+
+
+=== Balance audit: stored balance against the ledger ===
+SELECT count(*) AS wallets_checked,
+       count(*) FILTER (WHERE w.balance <> coalesce(l.ledger_balance, 0)) AS mismatches
+FROM wallets w
+LEFT JOIN (
+    SELECT wallet_id,
+           sum(CASE WHEN transaction_type IN ('funding', 'transfer_in', 'reversal')
+                    THEN amount ELSE -amount END) AS ledger_balance
+    FROM transactions
+    WHERE status = 'completed'
+    GROUP BY wallet_id
+) l USING (wallet_id);
+ wallets_checked | mismatches 
+-----------------+------------
+              25 |          0
+(1 row)
+
+SELECT w.wallet_id, w.balance AS stored_balance,
+       coalesce(l.ledger_balance, 0) AS ledger_balance,
+       w.balance - coalesce(l.ledger_balance, 0) AS difference
+FROM wallets w
+LEFT JOIN (
+    SELECT wallet_id,
+           sum(CASE WHEN transaction_type IN ('funding', 'transfer_in', 'reversal')
+                    THEN amount ELSE -amount END) AS ledger_balance
+    FROM transactions
+    WHERE status = 'completed'
+    GROUP BY wallet_id
+) l USING (wallet_id)
+WHERE w.balance <> coalesce(l.ledger_balance, 0)
+ORDER BY w.wallet_id;
+ wallet_id | stored_balance | ledger_balance | difference 
+-----------+----------------+----------------+------------
+(0 rows)
+
