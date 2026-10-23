@@ -1,0 +1,88 @@
+-- Captured 2026-10-23 01:08 +0100 on PostgreSQL 18.6, database proclus
+-- Command: portfolio-3-transactions-concurrency/run_two_sessions.ps1 08_deadlock, which runs session B as:
+--   psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -v start=<shared start time> -f portfolio-3-transactions-concurrency/sql/08_deadlock_session_b.sql
+
+
+=== Session B: NGN 30,000.00 from wallet 9 to wallet 5 ===
+SHOW deadlock_timeout;
+ deadlock_timeout 
+------------------
+ 1s
+(1 row)
+
+SELECT pg_temp.step(2);
+             step             
+------------------------------
+ step 2: session_b at t+2.0 s
+(1 row)
+
+BEGIN;
+BEGIN
+UPDATE wallets SET balance = balance - 30000.00
+WHERE wallet_id = 9 AND balance >= 30000.00
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         9 | 235000.00
+(1 row)
+
+UPDATE 1
+SELECT 1 = 1 AS debited 
+SELECT pg_backend_pid() AS session_b_pid, pg_current_xact_id() AS session_b_xid;
+ session_b_pid | session_b_xid 
+---------------+---------------
+         11480 |          1592
+(1 row)
+
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610230002', 9, 5, 30000.00, 'Overpayment refund', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          14 | TRF2610230002 | completed
+(1 row)
+
+INSERT 0 1
+SELECT pg_temp.step(4);
+             step             
+------------------------------
+ step 4: session_b at t+4.0 s
+(1 row)
+
+SELECT w.application_name AS waiting_session, w.state,
+       w.wait_event_type, w.wait_event,
+       b.application_name AS blocked_by,
+       btrim(regexp_replace(w.query, '\s+', ' ', 'g')) AS waiting_statement
+FROM pg_stat_activity w
+JOIN pg_stat_activity b ON b.pid = ANY (pg_blocking_pids(w.pid))
+WHERE w.datname = current_database();
+ waiting_session | state  | wait_event_type |  wait_event   | blocked_by |                                         waiting_statement                                         
+-----------------+--------+-----------------+---------------+------------+---------------------------------------------------------------------------------------------------
+ session_a       | active | Lock            | transactionid | session_b  | UPDATE wallets SET balance = balance + 50000.00 WHERE wallet_id = 9 RETURNING wallet_id, balance;
+(1 row)
+
+SELECT pg_temp.step(5);
+             step             
+------------------------------
+ step 5: session_b at t+5.0 s
+(1 row)
+
+UPDATE wallets SET balance = balance + 30000.00
+WHERE wallet_id = 5
+RETURNING wallet_id, balance;
+psql:portfolio-3-transactions-concurrency/sql/08_deadlock_session_b.sql:75: ERROR:  deadlock detected
+DETAIL:  Process 11480 waits for ShareLock on transaction 1591; blocked by process 19572.
+Process 19572 waits for ShareLock on transaction 1592; blocked by process 11480.
+HINT:  See server log for query details.
+CONTEXT:  while updating tuple (0,5) in relation "wallets"
+ROLLBACK;
+ROLLBACK
+SELECT pg_temp.clock();
+        clock         
+----------------------
+ session_b at t+6.0 s
+(1 row)
+
+SELECT '40P01' AS sqlstate, '40P01' = '40P01' AS deadlock_victim 
+Session B was chosen as the deadlock victim and rolled back: the refund was not made. The application would have to send it again.
