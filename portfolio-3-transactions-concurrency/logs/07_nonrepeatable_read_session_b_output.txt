@@ -1,0 +1,138 @@
+-- Captured 2026-10-23 01:08 +0100 on PostgreSQL 18.6, database proclus
+-- Command: portfolio-3-transactions-concurrency/run_two_sessions.ps1 07_nonrepeatable_read, which runs session B as:
+--   psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -v start=<shared start time> -f portfolio-3-transactions-concurrency/sql/07_nonrepeatable_read_session_b.sql
+
+
+=== Session B: NGN 120,000.00 from wallet 5 to wallet 10, during part 1 ===
+SELECT pg_temp.step(2);
+             step             
+------------------------------
+ step 2: session_b at t+2.0 s
+(1 row)
+
+BEGIN;
+BEGIN
+UPDATE wallets SET balance = balance - 120000.00
+WHERE wallet_id = 5 AND balance >= 120000.00
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         5 | 180000.00
+(1 row)
+
+UPDATE 1
+SELECT 1 = 1 AS debited 
+SELECT pg_temp.clock();
+        clock         
+----------------------
+ session_b at t+2.1 s
+(1 row)
+
+SELECT pg_current_xact_id() AS session_b_xid;
+ session_b_xid 
+---------------
+          1571
+(1 row)
+
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                           narration, status, processed_at)
+    VALUES ('TRF2610200001', 5, 10, 120000.00, 'House rent', 'completed', now())
+    RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          13 | TRF2610200001 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance + 120000.00
+    WHERE wallet_id = 10
+    RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+        10 | 120000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+    SELECT v.reference, v.wallet_id, v.transaction_type, 120000.00, t.transfer_id, 'House rent'
+    FROM transfers t
+    CROSS JOIN (VALUES ('TXN2610200001', 5, 'transfer_out'),
+                       ('TXN2610200002', 10, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+    WHERE t.reference = 'TRF2610200001'
+    RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount   
+----------------+---------------+-----------+------------------+-----------
+             48 | TXN2610200001 |         5 | transfer_out     | 120000.00
+             49 | TXN2610200002 |        10 | transfer_in      | 120000.00
+(2 rows)
+
+INSERT 0 2
+COMMIT;
+COMMIT
+
+=== Session B: NGN 80,000.00 from wallet 5 to wallet 14, during part 2 ===
+SELECT pg_temp.step(5);
+             step             
+------------------------------
+ step 5: session_b at t+5.0 s
+(1 row)
+
+BEGIN;
+BEGIN
+UPDATE wallets SET balance = balance - 80000.00
+WHERE wallet_id = 5 AND balance >= 80000.00
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         5 | 100000.00
+(1 row)
+
+UPDATE 1
+SELECT 1 = 1 AS debited 
+SELECT pg_temp.clock();
+        clock         
+----------------------
+ session_b at t+5.0 s
+(1 row)
+
+SELECT pg_current_xact_id() AS session_b_xid;
+ session_b_xid 
+---------------
+          1572
+(1 row)
+
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                           narration, status, processed_at)
+    VALUES ('TRF2610200002', 5, 14, 80000.00, 'Shop stock', 'completed', now())
+    RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          14 | TRF2610200002 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance + 80000.00
+    WHERE wallet_id = 14
+    RETURNING wallet_id, balance;
+ wallet_id | balance  
+-----------+----------
+        14 | 80000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+    SELECT v.reference, v.wallet_id, v.transaction_type, 80000.00, t.transfer_id, 'Shop stock'
+    FROM transfers t
+    CROSS JOIN (VALUES ('TXN2610200003', 5, 'transfer_out'),
+                       ('TXN2610200004', 14, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+    WHERE t.reference = 'TRF2610200002'
+    RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount  
+----------------+---------------+-----------+------------------+----------
+             50 | TXN2610200003 |         5 | transfer_out     | 80000.00
+             51 | TXN2610200004 |        14 | transfer_in      | 80000.00
+(2 rows)
+
+INSERT 0 2
+COMMIT;
+COMMIT
