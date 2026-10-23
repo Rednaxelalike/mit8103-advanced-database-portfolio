@@ -1,0 +1,81 @@
+-- Captured 2026-10-23 01:09 +0100 on PostgreSQL 18.6, database proclus
+-- Command: portfolio-3-transactions-concurrency/run_two_sessions.ps1 09_fix_lock_order, which runs session B as:
+--   psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -v start=<shared start time> -f portfolio-3-transactions-concurrency/sql/09_fix_lock_order_session_b.sql
+
+
+=== Session B: NGN 30,000.00 from wallet 9 to wallet 5, locking wallets in id order ===
+SELECT pg_temp.step(2);
+             step             
+------------------------------
+ step 2: session_b at t+2.0 s
+(1 row)
+
+BEGIN;
+BEGIN
+SELECT wallet_id, balance FROM wallets
+WHERE wallet_id IN (5, 9)
+ORDER BY wallet_id
+FOR UPDATE;
+ wallet_id |  balance  
+-----------+-----------
+         5 | 250000.00
+         9 | 315000.00
+(2 rows)
+
+SELECT pg_temp.clock();
+        clock         
+----------------------
+ session_b at t+4.0 s
+(1 row)
+
+SELECT pg_temp.step(5);
+             step             
+------------------------------
+ step 5: session_b at t+5.0 s
+(1 row)
+
+UPDATE wallets SET balance = balance - 30000.00
+WHERE wallet_id = 9 AND balance >= 30000.00
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         9 | 285000.00
+(1 row)
+
+UPDATE 1
+SELECT 1 = 1 AS debited 
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2610230002', 9, 5, 30000.00, 'Overpayment refund', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          14 | TRF2610230002 | completed
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance + 30000.00
+WHERE wallet_id = 5
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         5 | 280000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+SELECT v.reference, v.wallet_id, v.transaction_type, 30000.00, t.transfer_id, 'Overpayment refund'
+FROM transfers t
+CROSS JOIN (VALUES ('TXN2610230003', 9, 'transfer_out'),
+                   ('TXN2610230004', 5, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+WHERE t.reference = 'TRF2610230002'
+RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount  
+----------------+---------------+-----------+------------------+----------
+             50 | TXN2610230003 |         9 | transfer_out     | 30000.00
+             51 | TXN2610230004 |         5 | transfer_in      | 30000.00
+(2 rows)
+
+INSERT 0 2
+COMMIT;
+COMMIT
