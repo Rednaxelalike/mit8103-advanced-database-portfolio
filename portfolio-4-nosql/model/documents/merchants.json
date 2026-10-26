@@ -1,0 +1,12 @@
+[{"_id":1,"business_name":"Lekki Fresh Mart","cac_number":"RC1482736","category":"groceries","email":"payments@lekkifreshmart.example.com","status":"active","created_at":{"$date":"2026-07-02T09:00:00.000Z"}},
+{"_id":2,"business_name":"Mama Tolu Kitchen","cac_number":"BN2390417","category":"restaurant","email":"hello@mamatolukitchen.example.com","status":"active","created_at":{"$date":"2026-07-03T10:30:00.000Z"}},
+{"_id":3,"business_name":"Yaba Suya Spot","cac_number":"BN3017728","category":"restaurant","email":"orders@yabasuyaspot.example.com","status":"active","created_at":{"$date":"2026-07-05T15:45:00.000Z"}},
+{"_id":4,"business_name":"Eko Power Vending","cac_number":"RC1739025","category":"utilities","email":"billing@ekopowervending.example.com","status":"active","created_at":{"$date":"2026-07-06T08:15:00.000Z"}},
+{"_id":5,"business_name":"Danfo Express Rides","cac_number":"RC1620374","category":"transport","email":"rides@danfoexpress.example.com","status":"active","created_at":{"$date":"2026-07-08T06:20:00.000Z"}},
+{"_id":6,"business_name":"Ojota Data Hub","cac_number":"BN2844105","category":"airtime_data","email":"sales@ojotadatahub.example.com","status":"active","created_at":{"$date":"2026-07-09T12:05:00.000Z"}},
+{"_id":7,"business_name":"Balogun Fabrics House","cac_number":"BN1975360","category":"fashion","email":"shop@balogunfabrics.example.com","status":"active","created_at":{"$date":"2026-07-11T11:40:00.000Z"}},
+{"_id":8,"business_name":"Ikeja Wellness Pharmacy","cac_number":"RC1556089","category":"pharmacy","email":"care@ikejawellness.example.com","status":"active","created_at":{"$date":"2026-07-14T07:55:00.000Z"}},
+{"_id":9,"business_name":"Festac Learning Centre","cac_number":"RC1398412","category":"education","email":"admissions@festaclearning.example.com","status":"active","created_at":{"$date":"2026-07-16T09:10:00.000Z"}},
+{"_id":10,"business_name":"Computer Village Gadgets","cac_number":"RC1802263","category":"electronics","email":"sales@cvgadgets.example.com","status":"active","created_at":{"$date":"2026-07-18T13:25:00.000Z"}},
+{"_id":11,"business_name":"Marina Screens Cinema","cac_number":"RC1914470","category":"entertainment","email":"tickets@marinascreens.example.com","status":"active","created_at":{"$date":"2026-07-21T17:00:00.000Z"}},
+{"_id":12,"business_name":"Agege Bread Bakery","cac_number":"BN3120956","category":"groceries","email":"orders@agegebread.example.com","status":"suspended","created_at":{"$date":"2026-07-23T05:30:00.000Z"}}]

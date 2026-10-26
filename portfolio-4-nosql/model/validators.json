@@ -1,0 +1,235 @@
+{
+  "customers": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "title": "customers: a wallet holder, with KYC documents and saved beneficiaries embedded",
+      "required": ["_id", "first_name", "last_name", "email", "phone_number", "date_of_birth",
+                   "kyc_tier", "status", "created_at", "kyc_documents", "beneficiaries"],
+      "additionalProperties": false,
+      "properties": {
+        "_id": { "bsonType": ["int", "long"], "minimum": 1, "description": "customer_id in Portfolio 1" },
+        "first_name": { "bsonType": "string", "minLength": 1, "maxLength": 50 },
+        "last_name": { "bsonType": "string", "minLength": 1, "maxLength": 50 },
+        "email": { "bsonType": "string", "maxLength": 254, "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" },
+        "phone_number": { "bsonType": "string", "pattern": "^\\+234[789][01][0-9]{8}$",
+                          "description": "Nigerian mobile number in international form" },
+        "date_of_birth": { "bsonType": "date" },
+        "kyc_tier": { "bsonType": "int", "enum": [1, 2, 3] },
+        "status": { "enum": ["active", "suspended", "closed"] },
+        "created_at": { "bsonType": "date" },
+        "kyc_documents": {
+          "bsonType": "array",
+          "description": "Identity and address documents; the fields present depend on the type and on the review",
+          "items": {
+            "bsonType": "object",
+            "required": ["document_id", "document_type", "document_number", "status", "submitted_at"],
+            "additionalProperties": false,
+            "properties": {
+              "document_id": { "bsonType": ["int", "long"], "minimum": 1 },
+              "document_type": { "enum": ["bvn", "nin", "passport", "drivers_licence", "voters_card", "utility_bill"] },
+              "document_number": { "bsonType": "string", "minLength": 1, "maxLength": 20 },
+              "expiry_date": { "bsonType": "date" },
+              "status": { "enum": ["submitted", "verified", "rejected"] },
+              "submitted_at": { "bsonType": "date" },
+              "reviewed_at": { "bsonType": "date" },
+              "reviewed_by": { "bsonType": "string", "maxLength": 50 }
+            },
+            "allOf": [
+              {
+                "description": "BVN and NIN are both 11 digits",
+                "anyOf": [
+                  { "properties": { "document_type": { "enum": ["passport", "drivers_licence", "voters_card", "utility_bill"] } } },
+                  { "properties": { "document_number": { "pattern": "^[0-9]{11}$" } } }
+                ]
+              },
+              {
+                "description": "Only passports and driving licences carry an expiry date",
+                "anyOf": [
+                  { "properties": { "document_type": { "enum": ["passport", "drivers_licence"] } } },
+                  { "not": { "required": ["expiry_date"] } }
+                ]
+              },
+              {
+                "description": "Waiting for review (no reviewer, no review time) or reviewed (both recorded)",
+                "oneOf": [
+                  { "properties": { "status": { "enum": ["submitted"] } },
+                    "not": { "anyOf": [ { "required": ["reviewed_at"] }, { "required": ["reviewed_by"] } ] } },
+                  { "properties": { "status": { "enum": ["verified", "rejected"] } },
+                    "required": ["reviewed_at", "reviewed_by"] }
+                ]
+              }
+            ]
+          }
+        },
+        "beneficiaries": {
+          "bsonType": "array",
+          "description": "Wallets this customer has saved for quick transfers",
+          "items": {
+            "bsonType": "object",
+            "required": ["beneficiary_id", "wallet_id", "nickname", "created_at"],
+            "additionalProperties": false,
+            "properties": {
+              "beneficiary_id": { "bsonType": ["int", "long"], "minimum": 1 },
+              "wallet_id": { "bsonType": ["int", "long"], "minimum": 1 },
+              "nickname": { "bsonType": "string", "minLength": 1, "maxLength": 50 },
+              "created_at": { "bsonType": "date" }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "wallets": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "title": "wallets: a naira wallet; balance is the field every payment updates",
+      "required": ["_id", "customer_id", "wallet_number", "wallet_type", "balance", "status", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "_id": { "bsonType": ["int", "long"], "minimum": 1, "description": "wallet_id in Portfolio 1" },
+        "customer_id": { "bsonType": ["int", "long"], "minimum": 1 },
+        "wallet_number": { "bsonType": "string", "pattern": "^[0-9]{10}$" },
+        "wallet_type": { "enum": ["main", "savings"] },
+        "balance": { "bsonType": "decimal", "minimum": 0, "description": "Never negative: no overdraft" },
+        "status": { "enum": ["active", "frozen", "closed"] },
+        "created_at": { "bsonType": "date" }
+      }
+    }
+  },
+
+  "merchants": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "title": "merchants: businesses customers pay from their wallets",
+      "required": ["_id", "business_name", "cac_number", "category", "email", "status", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "_id": { "bsonType": ["int", "long"], "minimum": 1, "description": "merchant_id in Portfolio 1" },
+        "business_name": { "bsonType": "string", "minLength": 1, "maxLength": 100 },
+        "cac_number": { "bsonType": "string", "pattern": "^(RC|BN)[0-9]{5,8}$" },
+        "category": { "enum": ["groceries", "restaurant", "transport", "utilities", "airtime_data",
+                               "fashion", "pharmacy", "education", "entertainment", "electronics"] },
+        "email": { "bsonType": "string", "maxLength": 254, "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" },
+        "status": { "enum": ["active", "suspended"] },
+        "created_at": { "bsonType": "date" }
+      }
+    }
+  },
+
+  "transfers": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "title": "transfers: a request to move money from one wallet to another",
+      "required": ["_id", "reference", "sender_wallet_id", "receiver_wallet_id", "amount", "status", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "_id": { "bsonType": ["int", "long"], "minimum": 1, "description": "transfer_id in Portfolio 1" },
+        "reference": { "bsonType": "string", "minLength": 1, "maxLength": 20 },
+        "sender_wallet_id": { "bsonType": ["int", "long"], "minimum": 1 },
+        "receiver_wallet_id": { "bsonType": ["int", "long"], "minimum": 1 },
+        "amount": { "bsonType": "decimal", "exclusiveMinimum": true, "minimum": 0 },
+        "narration": { "bsonType": "string", "maxLength": 100 },
+        "status": { "enum": ["pending", "completed", "failed", "reversed"] },
+        "failure_reason": { "bsonType": "string", "maxLength": 200 },
+        "created_at": { "bsonType": "date" },
+        "processed_at": { "bsonType": "date" }
+      },
+      "oneOf": [
+        { "description": "pending: not processed yet, no failure reason",
+          "properties": { "status": { "enum": ["pending"] } },
+          "not": { "anyOf": [ { "required": ["processed_at"] }, { "required": ["failure_reason"] } ] } },
+        { "description": "completed: processed, no failure reason",
+          "properties": { "status": { "enum": ["completed"] } },
+          "required": ["processed_at"],
+          "not": { "required": ["failure_reason"] } },
+        { "description": "failed or reversed: processed, and must say why",
+          "properties": { "status": { "enum": ["failed", "reversed"] } },
+          "required": ["processed_at", "failure_reason"] }
+      ]
+    },
+    "$expr": {
+      "$and": [
+        { "$ne": ["$sender_wallet_id", "$receiver_wallet_id"] },
+        { "$or": [ { "$eq": [{ "$type": "$processed_at" }, "missing"] },
+                   { "$gte": ["$processed_at", "$created_at"] } ] }
+      ]
+    }
+  },
+
+  "transactions": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "title": "transactions: the ledger, one movement of money on one wallet; the fields depend on the type",
+      "required": ["_id", "reference", "wallet_id", "transaction_type", "amount", "status", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "_id": { "bsonType": ["int", "long"], "minimum": 1, "description": "transaction_id in Portfolio 1" },
+        "reference": { "bsonType": "string", "minLength": 1, "maxLength": 20 },
+        "wallet_id": { "bsonType": ["int", "long"], "minimum": 1 },
+        "transaction_type": { "enum": ["funding", "transfer_out", "transfer_in", "merchant_payment", "reversal"] },
+        "amount": { "bsonType": "decimal", "exclusiveMinimum": true, "minimum": 0 },
+        "status": { "enum": ["pending", "completed", "failed"] },
+        "transfer": {
+          "bsonType": "object",
+          "required": ["transfer_id", "reference"],
+          "additionalProperties": false,
+          "properties": {
+            "transfer_id": { "bsonType": ["int", "long"], "minimum": 1 },
+            "reference": { "bsonType": "string", "maxLength": 20 }
+          }
+        },
+        "merchant": {
+          "bsonType": "object",
+          "description": "The merchant as it was at the time of payment",
+          "required": ["merchant_id", "business_name", "category"],
+          "additionalProperties": false,
+          "properties": {
+            "merchant_id": { "bsonType": ["int", "long"], "minimum": 1 },
+            "business_name": { "bsonType": "string", "maxLength": 100 },
+            "category": { "bsonType": "string", "maxLength": 20 }
+          }
+        },
+        "narration": { "bsonType": "string", "maxLength": 100 },
+        "created_at": { "bsonType": "date" }
+      },
+      "oneOf": [
+        { "description": "Transfer legs and reversals point at their transfer, and at no merchant",
+          "properties": { "transaction_type": { "enum": ["transfer_out", "transfer_in", "reversal"] } },
+          "required": ["transfer"],
+          "not": { "required": ["merchant"] } },
+        { "description": "Merchant payments name the merchant, and no transfer",
+          "properties": { "transaction_type": { "enum": ["merchant_payment"] } },
+          "required": ["merchant"],
+          "not": { "required": ["transfer"] } },
+        { "description": "Funding has neither",
+          "properties": { "transaction_type": { "enum": ["funding"] } },
+          "not": { "anyOf": [ { "required": ["transfer"] }, { "required": ["merchant"] } ] } }
+      ]
+    }
+  },
+
+  "audit_log": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "title": "audit_log: append-only record of decisions by staff or by the system",
+      "required": ["_id", "entity_type", "action", "actor_type", "actor_ref", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "_id": { "bsonType": ["int", "long"], "minimum": 1, "description": "audit_id in Portfolio 1" },
+        "entity_type": { "enum": ["customer", "kyc_document", "wallet", "transfer", "transaction", "merchant", "beneficiary"] },
+        "entity_id": { "bsonType": ["int", "long"], "minimum": 1 },
+        "action": { "enum": ["status_changed", "verified", "rejected", "held", "failed", "reversed", "audited"] },
+        "actor_type": { "enum": ["customer", "staff", "system"] },
+        "actor_ref": { "bsonType": "string", "minLength": 1, "maxLength": 50 },
+        "details": { "bsonType": "string", "maxLength": 255 },
+        "created_at": { "bsonType": "date" }
+      },
+      "anyOf": [
+        { "description": "entity_id is left out only by a balance audit, which covers every wallet",
+          "required": ["entity_id"] },
+        { "properties": { "action": { "enum": ["audited"] } } }
+      ]
+    }
+  }
+}
