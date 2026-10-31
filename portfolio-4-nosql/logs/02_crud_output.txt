@@ -1,0 +1,189 @@
+// Captured 2026-10-31 15:47 +0100 on MongoDB Atlas proclus-cluster (MongoDB 8.0.34), database proclus
+// Command: mongosh "$MONGODB_URI" --quiet --file portfolio-4-nosql/scripts/02_crud.js
+
+
+== 1. Collections with validators (MongoDB 8.0.36, replica set atlas-100ow8-shard-0) ===
+created customers
+created wallets
+created merchants
+created transfers
+created transactions
+created audit_log
+
+== 2. Unique indexes (the Portfolio 1 UNIQUE constraints) ============
+customers.customers_email_key  {"email":1}
+customers.customers_phone_number_key  {"phone_number":1}
+customers.kyc_documents_number_key  {"kyc_documents.document_type":1,"kyc_documents.document_number":1}
+merchants.merchants_cac_number_key  {"cac_number":1}
+merchants.merchants_email_key  {"email":1}
+wallets.wallets_wallet_number_key  {"wallet_number":1}
+wallets.wallets_one_per_type_key  {"customer_id":1,"wallet_type":1}
+transfers.transfers_reference_key  {"reference":1}
+transactions.transactions_reference_key  {"reference":1}
+transactions.transactions_one_leg_per_type_key  {"transfer.transfer_id":1,"transaction_type":1}
+
+== 3. Load the documents =============================================
+customers     inserted 20
+wallets       inserted 25
+merchants     inserted 12
+transfers     inserted 12
+transactions  inserted 47
+audit_log     inserted 37
+
+== 4. Counts and integrity audits ====================================
+ok    customers      20 documents (expected 20)
+ok    wallets        25 documents (expected 25)
+ok    merchants      12 documents (expected 12)
+ok    transfers      12 documents (expected 12)
+ok    transactions   47 documents (expected 47)
+ok    audit_log      37 documents (expected 37)
+ok    kyc_documents  31 embedded in customers (expected 31)
+ok    beneficiaries  18 embedded in customers (expected 18)
+ok    balance audit: 0 of 25 wallets differ from their ledger total
+ok    transfer audit: 0 of 18 transfer ledger entries disagree with their transfer
+
+== 5. Tests ==========================================================
+-- Validators: each document breaks one $jsonSchema or $expr rule (expect 121 DocumentValidationFailure)
+ok    5.1 wallet with a negative balance: rejected with 121 DocumentValidationFailure  [properties > balance > minimum]
+ok    5.2 wallet balance stored as a double, not Decimal128: rejected with 121 DocumentValidationFailure  [properties > balance > bsonType]
+ok    5.3 overdraft: debit wallet 2 (23,500.00) by 50,000.00: rejected with 121 DocumentValidationFailure  [properties > balance > minimum]
+ok    5.4 transfer to the sending wallet: rejected with 121 DocumentValidationFailure  [$expr]
+ok    5.5 transfer processed before it was created: rejected with 121 DocumentValidationFailure  [$expr]
+ok    5.6 failed transfer without a failure_reason: rejected with 121 DocumentValidationFailure  [oneOf]
+ok    5.7 transfer of 0.00: rejected with 121 DocumentValidationFailure  [properties > amount > minimum]
+ok    5.8 merchant payment without its merchant: rejected with 121 DocumentValidationFailure  [oneOf]
+ok    5.9 funding entry carrying a merchant: rejected with 121 DocumentValidationFailure  [oneOf]
+ok    5.10 BVN with 10 digits: rejected with 121 DocumentValidationFailure  [properties > kyc_documents > items > allOf > "BVN and NIN are both 11 digits"]
+ok    5.11 BVN with an expiry date: rejected with 121 DocumentValidationFailure  [properties > kyc_documents > items > allOf > "Only passports and driving licences carry an expiry date"]
+ok    5.12 KYC document marked verified with no reviewer: rejected with 121 DocumentValidationFailure  [properties > kyc_documents > items > allOf > "Waiting for review (no reviewer, no review time) or reviewed (both recorded)"]
+ok    5.13 KYC tier 4: rejected with 121 DocumentValidationFailure  [properties > kyc_tier > enum]
+ok    5.14 customer with a field the model does not have: rejected with 121 DocumentValidationFailure  [additionalProperties]
+ok    5.15 audit entry about a document but with no entity_id: rejected with 121 DocumentValidationFailure  [anyOf]
+-- Unique indexes: each document repeats a key (expect 11000 DuplicateKey)
+ok    5.16 customer email that differs only in case: rejected with 11000 DuplicateKey  [customers_email_key]
+ok    5.17 customer phone number already in use: rejected with 11000 DuplicateKey  [customers_phone_number_key]
+ok    5.18 BVN already on another customer (pushed into customer 2): rejected with 11000 DuplicateKey  [kyc_documents_number_key]
+ok    5.19 second main wallet for customer 6: rejected with 11000 DuplicateKey  [wallets_one_per_type_key]
+ok    5.20 wallet number already in use: rejected with 11000 DuplicateKey  [wallets_wallet_number_key]
+ok    5.21 merchant CAC number already in use: rejected with 11000 DuplicateKey  [merchants_cac_number_key]
+ok    5.22 transfer reference already in use: rejected with 11000 DuplicateKey  [transfers_reference_key]
+ok    5.23 second transfer_out leg for transfer 1: rejected with 11000 DuplicateKey  [transactions_one_leg_per_type_key]
+-- Not enforced: rules Portfolio 1 checks that a document database leaves to the application
+ok    5.24 ledger entry for wallet 999, which does not exist (no foreign key): accepted (not checked by MongoDB)
+ok    5.25 delete wallet 5 while ledger entries point at it (no ON DELETE RESTRICT): accepted (not checked by MongoDB)
+      3 ledger entries were left pointing at the deleted wallet; it has been put back
+ok    5.26 customer 6 saves wallet 10 a second time (unique index cannot look inside one array): accepted (not checked by MongoDB)
+ok    5.27 the same save with the wallet in the update's filter: matched 0, modified 0
+
+== 6. Counts and integrity audits after the tests ====================
+ok    customers      20 documents (expected 20)
+ok    wallets        25 documents (expected 25)
+ok    merchants      12 documents (expected 12)
+ok    transfers      12 documents (expected 12)
+ok    transactions   47 documents (expected 47)
+ok    audit_log      37 documents (expected 37)
+ok    kyc_documents  31 embedded in customers (expected 31)
+ok    beneficiaries  18 embedded in customers (expected 18)
+ok    balance audit: 0 of 25 wallets differ from their ledger total
+ok    transfer audit: 0 of 18 transfer ledger entries disagree with their transfer
+
+All checks passed.
+
+#####################################################################
+# 02_crud.js: the key operations for one new customer
+#####################################################################
+
+== 1. Create: open an account ========================================
+ok    registration with date of birth 2010-02-14 refused by the application: age 16 is under 18, nothing written
+ok    Adaobi Chukwu, born 1998-04-22, is 28 on 2026-10-31
+insertOne customers  _id 21 with 1 embedded KYC document (document_id 32)
+insertOne wallets    _id 26, wallet_number 5216039482, balance NGN 0.00
+
+== 2. Read: the customer profile =====================================
+-- db.customers.findOne({ _id: 5 }): Ibrahim Musa's profile, KYC and beneficiaries in one read
+{
+  _id: 5,
+  first_name: 'Ibrahim',
+  last_name: 'Musa',
+  kyc_tier: 3,
+  status: 'active',
+  kyc_documents: [
+    {
+      document_type: 'bvn',
+      status: 'verified',
+      reviewed_by: 'compliance.olumide'
+    },
+    {
+      document_type: 'drivers_licence',
+      status: 'verified',
+      reviewed_by: 'compliance.olumide'
+    },
+    {
+      document_type: 'utility_bill',
+      status: 'verified',
+      reviewed_by: 'compliance.olumide'
+    }
+  ],
+  beneficiaries: [
+    {
+      beneficiary_id: 5,
+      wallet_id: 8,
+      nickname: 'Zainab',
+      created_at: ISODate('2026-08-28T13:11:00.000Z')
+    }
+  ]
+}
+-- db.wallets.find({ customer_id: 5 }): wallets are referenced, so they are a second query
+   wallet 5  5053716928  main       NGN 300000.00  active
+   wallet 23  6053716929  savings         NGN 0.00  active
+
+== 3. Update: verify KYC, fund the wallet, save a beneficiary ========
+ok    updateOne customers: BVN verified and kyc_tier 1 -> 2 in one write (matched 1, modified 1)
+   now: kyc_tier 2, BVN verified by compliance.adaeze; audit entry added
+ok    fund wallet 26 with NGN 80000.00 (wallet $inc + funding ledger entry, committed together): balance NGN 80000.00
+ok    save wallet 4 as beneficiary "Ngozi": modified 1
+ok    save it again: matched 0, modified 0 (already saved, nothing added)
+
+== 4. Money: transfers as multi-document transactions, and a merchant payment ===
+-- TRF2610310001: NGN 25000.00 from wallet 26 to wallet 4 ("Aso-ebi contribution")
+   debit inside the transaction: modified 1; inside it reads NGN 55000.00, outside it still reads NGN 80000.00
+   commitTransaction: transfer 13 completed with 2 ledger legs
+   wallet 26: NGN 80000.00 -> NGN 55000.00;  wallet 4: NGN 45000.00 -> NGN 70000.00
+ok    transfer of NGN 25000.00 committed: sender down 25000.00, receiver up 25000.00
+-- TRF2610310002: NGN 100000.00 from wallet 26 to wallet 4 ("School fees")
+   abortTransaction: Insufficient funds: balance NGN 55000.00, requested NGN 100000.00
+   recorded transfer 14 as failed, with an audit entry; no ledger entries
+   wallet 26: NGN 55000.00 -> NGN 55000.00;  wallet 4: NGN 70000.00 -> NGN 70000.00
+ok    transfer of NGN 100000.00 aborted for insufficient funds: both balances unchanged
+-- TRF2610310003: NGN 5000.00 from wallet 26 to wallet 18 ("Thank you")
+   debit inside the transaction: modified 1; inside it reads NGN 50000.00, outside it still reads NGN 55000.00
+   abortTransaction: Receiver wallet 18 is frozen
+   recorded transfer 15 as failed, with an audit entry; no ledger entries
+   wallet 26: NGN 55000.00 -> NGN 55000.00;  wallet 18: NGN 0.00 -> NGN 0.00
+ok    transfer to frozen wallet 18 aborted after the debit: the debit was undone, both balances unchanged
+-- merchant payment: NGN 12450.00 from wallet 26 to merchant 1 Lekki Fresh Mart (groceries)
+ok    merchant payment committed: wallet 26 balance NGN 42550.00
+
+== 5. Read: wallet statement for October 2026 ========================
+-- db.transactions.find({ wallet_id: 26, created_at: { $gte: 2026-09-30T23:00:00.000Z, $lt: 2026-10-31T23:00:00.000Z } }).sort({ created_at: 1 })
+   2026-10-31T09:30Z  TXN2610310001  funding          +80000.00   80000.00  Bank transfer top-up
+   2026-10-31T11:00Z  TXN2610310002  transfer_out     -25000.00   55000.00  Aso-ebi contribution / TRF2610310001
+   2026-10-31T12:30Z  TXN2610310004  merchant_payment -12450.00   42550.00  Groceries / Lekki Fresh Mart
+ok    statement: 3 entries, closing balance NGN 42550.00 equals the wallet balance
+
+== 6. Delete: remove a beneficiary; close a wallet ===================
+ok    $pull beneficiary wallet 4 from customer 21: modified 1, 0 beneficiaries left
+ok    application-side RESTRICT: delete wallet 26 refused: 3 ledger entries point at wallet 26
+ok    savings wallet 27 opened, then closed through its status (modified 1); it is still stored: status closed
+
+== 7. Counts and integrity audits after the operations ===============
+ok    customers      21 documents (20 seeded + 1)
+ok    wallets        27 documents (25 seeded + 2)
+ok    merchants      12 documents (12 seeded + 0)
+ok    transfers      15 documents (12 seeded + 3)
+ok    transactions   51 documents (47 seeded + 4)
+ok    audit_log      41 documents (37 seeded + 4)
+ok    balance audit: 0 of 27 wallets differ from their ledger total
+ok    transfer audit: 0 of 20 transfer ledger entries disagree with their transfer
+
+All checks passed.
