@@ -1,0 +1,183 @@
+// Captured 2026-10-31 15:57 +0100 on MongoDB Atlas proclus-cluster (MongoDB 8.0.34), database proclus
+// Command: mongosh "$MONGODB_URI" --quiet --file portfolio-4-nosql/scripts/03_indexes.js
+
+
+== 1. Collections with validators (MongoDB 8.0.36, replica set atlas-100ow8-shard-0) ===
+created customers
+created wallets
+created merchants
+created transfers
+created transactions
+created audit_log
+
+== 2. Unique indexes (the Portfolio 1 UNIQUE constraints) ============
+customers.customers_email_key  {"email":1}
+customers.customers_phone_number_key  {"phone_number":1}
+customers.kyc_documents_number_key  {"kyc_documents.document_type":1,"kyc_documents.document_number":1}
+merchants.merchants_cac_number_key  {"cac_number":1}
+merchants.merchants_email_key  {"email":1}
+wallets.wallets_wallet_number_key  {"wallet_number":1}
+wallets.wallets_one_per_type_key  {"customer_id":1,"wallet_type":1}
+transfers.transfers_reference_key  {"reference":1}
+transactions.transactions_reference_key  {"reference":1}
+transactions.transactions_one_leg_per_type_key  {"transfer.transfer_id":1,"transaction_type":1}
+
+== 3. Load the documents =============================================
+customers     inserted 20
+wallets       inserted 25
+merchants     inserted 12
+transfers     inserted 12
+transactions  inserted 47
+audit_log     inserted 37
+
+== 4. Counts and integrity audits ====================================
+ok    customers      20 documents (expected 20)
+ok    wallets        25 documents (expected 25)
+ok    merchants      12 documents (expected 12)
+ok    transfers      12 documents (expected 12)
+ok    transactions   47 documents (expected 47)
+ok    audit_log      37 documents (expected 37)
+ok    kyc_documents  31 embedded in customers (expected 31)
+ok    beneficiaries  18 embedded in customers (expected 18)
+ok    balance audit: 0 of 25 wallets differ from their ledger total
+ok    transfer audit: 0 of 18 transfer ledger entries disagree with their transfer
+
+== 5. Tests ==========================================================
+-- Validators: each document breaks one $jsonSchema or $expr rule (expect 121 DocumentValidationFailure)
+ok    5.1 wallet with a negative balance: rejected with 121 DocumentValidationFailure  [properties > balance > minimum]
+ok    5.2 wallet balance stored as a double, not Decimal128: rejected with 121 DocumentValidationFailure  [properties > balance > bsonType]
+ok    5.3 overdraft: debit wallet 2 (23,500.00) by 50,000.00: rejected with 121 DocumentValidationFailure  [properties > balance > minimum]
+ok    5.4 transfer to the sending wallet: rejected with 121 DocumentValidationFailure  [$expr]
+ok    5.5 transfer processed before it was created: rejected with 121 DocumentValidationFailure  [$expr]
+ok    5.6 failed transfer without a failure_reason: rejected with 121 DocumentValidationFailure  [oneOf]
+ok    5.7 transfer of 0.00: rejected with 121 DocumentValidationFailure  [properties > amount > minimum]
+ok    5.8 merchant payment without its merchant: rejected with 121 DocumentValidationFailure  [oneOf]
+ok    5.9 funding entry carrying a merchant: rejected with 121 DocumentValidationFailure  [oneOf]
+ok    5.10 BVN with 10 digits: rejected with 121 DocumentValidationFailure  [properties > kyc_documents > items > allOf > "BVN and NIN are both 11 digits"]
+ok    5.11 BVN with an expiry date: rejected with 121 DocumentValidationFailure  [properties > kyc_documents > items > allOf > "Only passports and driving licences carry an expiry date"]
+ok    5.12 KYC document marked verified with no reviewer: rejected with 121 DocumentValidationFailure  [properties > kyc_documents > items > allOf > "Waiting for review (no reviewer, no review time) or reviewed (both recorded)"]
+ok    5.13 KYC tier 4: rejected with 121 DocumentValidationFailure  [properties > kyc_tier > enum]
+ok    5.14 customer with a field the model does not have: rejected with 121 DocumentValidationFailure  [additionalProperties]
+ok    5.15 audit entry about a document but with no entity_id: rejected with 121 DocumentValidationFailure  [anyOf]
+-- Unique indexes: each document repeats a key (expect 11000 DuplicateKey)
+ok    5.16 customer email that differs only in case: rejected with 11000 DuplicateKey  [customers_email_key]
+ok    5.17 customer phone number already in use: rejected with 11000 DuplicateKey  [customers_phone_number_key]
+ok    5.18 BVN already on another customer (pushed into customer 2): rejected with 11000 DuplicateKey  [kyc_documents_number_key]
+ok    5.19 second main wallet for customer 6: rejected with 11000 DuplicateKey  [wallets_one_per_type_key]
+ok    5.20 wallet number already in use: rejected with 11000 DuplicateKey  [wallets_wallet_number_key]
+ok    5.21 merchant CAC number already in use: rejected with 11000 DuplicateKey  [merchants_cac_number_key]
+ok    5.22 transfer reference already in use: rejected with 11000 DuplicateKey  [transfers_reference_key]
+ok    5.23 second transfer_out leg for transfer 1: rejected with 11000 DuplicateKey  [transactions_one_leg_per_type_key]
+-- Not enforced: rules Portfolio 1 checks that a document database leaves to the application
+ok    5.24 ledger entry for wallet 999, which does not exist (no foreign key): accepted (not checked by MongoDB)
+ok    5.25 delete wallet 5 while ledger entries point at it (no ON DELETE RESTRICT): accepted (not checked by MongoDB)
+      3 ledger entries were left pointing at the deleted wallet; it has been put back
+ok    5.26 customer 6 saves wallet 10 a second time (unique index cannot look inside one array): accepted (not checked by MongoDB)
+ok    5.27 the same save with the wallet in the update's filter: matched 0, modified 0
+
+== 6. Counts and integrity audits after the tests ====================
+ok    customers      20 documents (expected 20)
+ok    wallets        25 documents (expected 25)
+ok    merchants      12 documents (expected 12)
+ok    transfers      12 documents (expected 12)
+ok    transactions   47 documents (expected 47)
+ok    audit_log      37 documents (expected 37)
+ok    kyc_documents  31 embedded in customers (expected 31)
+ok    beneficiaries  18 embedded in customers (expected 18)
+ok    balance audit: 0 of 25 wallets differ from their ledger total
+ok    transfer audit: 0 of 18 transfer ledger entries disagree with their transfer
+
+All checks passed.
+
+#####################################################################
+# 03_indexes.js: about 200,000 ledger entries, explain before and after
+#####################################################################
+
+== 1. Generate the larger data =======================================
+customers     5020 documents
+wallets       5025 documents
+transfers     57299 documents
+transactions  227895 documents
+(generated and sent to Atlas in 130 s; time varies with the connection)
+ok    about 200,000 ledger entries: 227895
+   funding             39756
+   merchant_payment    73547
+   reversal                1
+   transfer_in         57295
+   transfer_out        57296
+
+== 2. Before: no index on the queried fields =========================
+Indexes on transactions: _id_, transactions_reference_key, transactions_one_leg_per_type_key
+Q1 statement: find({"wallet_id":2026} + September 2026).sort({ created_at: 1 })
+   plan: SORT <- COLLSCAN
+   keys examined 0, documents examined 227895, returned 4
+   executionTimeMillis over 5 runs: [1332, 1314, 1081, 1082, 1142], median 1142 ms
+Q2 monthly totals: aggregate [$match status + Jul-Sep 2026, $group month (Africa/Lagos) + type, $sort]
+   plan: GROUP <- COLLSCAN
+   keys examined 0, documents examined 227895, returned 13
+   executionTimeMillis over 5 runs: [3219, 3514, 3283, 2582, 1125], median 3219 ms
+Q2 result:
+   month    transaction_type     rows        total_ngn
+   2026-07  funding             3485     353983500.00
+   2026-07  merchant_payment    7395      56466728.50
+   2026-07  transfer_in         5934     297291655.00
+   2026-07  transfer_out        5934     297291655.00
+   2026-08  funding             3561     367875500.00
+   2026-08  merchant_payment    7862      60024372.50
+   2026-08  transfer_in         6241     312643865.50
+   2026-08  transfer_out        6241     312643865.50
+   2026-09  funding             3696     376974000.00
+   2026-09  merchant_payment    7977      61761234.75
+   2026-09  reversal               1          8000.00
+   2026-09  transfer_in         6307     314999321.50
+   2026-09  transfer_out        6308     315007321.50
+
+== 3. Compound indexes ===============================================
+   _id_                                           {"_id":1}
+   transactions_reference_key                     {"reference":1}
+   transactions_one_leg_per_type_key              {"transfer.transfer_id":1,"transaction_type":1}
+   transactions_wallet_id_created_at_idx          {"wallet_id":1,"created_at":1}
+   transactions_status_created_at_idx             {"status":1,"created_at":1}
+   transactions_status_created_at_covering_idx    {"status":1,"created_at":1,"transaction_type":1,"amount":1}
+
+== 4. After: the same queries ========================================
+Q1 statement, planner's choice
+   plan: FETCH <- IXSCAN transactions_wallet_id_created_at_idx
+   keys examined 4, documents examined 4, returned 4
+   executionTimeMillis over 5 runs: [2, 0, 0, 0, 0], median 0 ms
+Q2 monthly totals, planner's choice
+   plan: GROUP <- PROJECTION_COVERED <- IXSCAN transactions_status_created_at_covering_idx
+   keys examined 70942, documents examined 0, returned 13
+   executionTimeMillis over 5 runs: [409, 176, 172, 170, 199], median 176 ms
+Q2 monthly totals, hinted to the {status, created_at} index (no covering fields)
+   plan: GROUP <- FETCH <- IXSCAN transactions_status_created_at_idx
+   keys examined 70942, documents examined 70942, returned 13
+   executionTimeMillis over 5 runs: [227, 225, 266, 235, 215], median 227 ms
+Q2 monthly totals, hinted to the covering index
+   plan: GROUP <- PROJECTION_COVERED <- IXSCAN transactions_status_created_at_covering_idx
+   keys examined 70942, documents examined 0, returned 13
+   executionTimeMillis over 5 runs: [195, 176, 182, 243, 223], median 195 ms
+ok    Q2 returns the same rows before and after the indexes
+ok    Q1 after: an index scan, no SORT stage (FETCH <- IXSCAN transactions_wallet_id_created_at_idx)
+ok    Q1 after: documents examined = documents returned (4 = 4)
+ok    Q2 with the covering index reads no documents (0 examined)
+
+Summary (median ms over 5 runs of explain; keys / documents examined)
+   query                          before                      after
+   Q1 statement                   1142 ms; 0 / 227895         0 ms; 4 / 4
+   Q2 planner's choice            3219 ms; 0 / 227895         176 ms; 70942 / 0
+   Q2 {status, created_at}        3219 ms; 0 / 227895         227 ms; 70942 / 70942
+   Q2 covering index              3219 ms; 0 / 227895         195 ms; 70942 / 0
+
+== 5. Index sizes, and the integrity audits on the larger data =======
+transactions: 227895 documents, 53.9 MB of data, 11.3 MB on disk (compressed)
+   _id_                                              6.4 MB
+   transactions_reference_key                       13.6 MB
+   transactions_one_leg_per_type_key                 7.3 MB
+   transactions_wallet_id_created_at_idx             2.7 MB
+   transactions_status_created_at_idx                2.4 MB
+   transactions_status_created_at_covering_idx       6.9 MB
+ok    balance audit: 0 of 5025 wallets differ from their ledger total
+ok    transfer audit: 0 of 114592 transfer ledger entries disagree with their transfer
+
+All checks passed.
