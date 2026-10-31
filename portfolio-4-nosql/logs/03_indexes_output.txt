@@ -1,4 +1,4 @@
-// Captured 2026-10-31 15:57 +0100 on MongoDB Atlas proclus-cluster (MongoDB 8.0.34), database proclus
+// Captured 2026-10-31 15:57 +0100 on MongoDB Atlas proclus-cluster (MongoDB 8.0.36), database proclus
 // Command: mongosh "$MONGODB_URI" --quiet --file portfolio-4-nosql/scripts/03_indexes.js
 
 

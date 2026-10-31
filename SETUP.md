@@ -10,7 +10,7 @@ Everything in this portfolio runs on two databases: PostgreSQL installed directl
 | PostgreSQL replica (Portfolio 5 only) | same binaries, second data folder | `localhost:5433` |
 | pgAdmin 4 | 9.18, bundled with the PostgreSQL installer | local |
 | `psql`, `pg_ctl`, `pg_basebackup` | bundled with the PostgreSQL installer, in `C:\Program Files\PostgreSQL\18\bin` | local |
-| MongoDB Atlas | M0 free cluster `proclus-cluster`, MongoDB 8.0.34, three-member replica set (AWS, one region) | cloud |
+| MongoDB Atlas | M0 free cluster `proclus-cluster`, MongoDB 8.0.36 (8.0.34 at setup; Atlas applies patch upgrades), three-member replica set (AWS, one region) | cloud |
 | MongoDB Compass | 1.52.0 | local |
 | `mongosh` | 2.12.0 (per-user install at `%LOCALAPPDATA%\Programs\mongosh`) | local |
 | DBeaver Community (optional) | 26.2.0 | local |

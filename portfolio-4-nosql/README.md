@@ -1,6 +1,6 @@
 # Portfolio 4: NoSQL and advanced data models
 
-> In progress. Done: the document model, its sample documents, the `$jsonSchema` validators, the seed script with its tests, the CRUD script, and the indexes with `explain` before and after. Still to come: the aggregations script, `comparison.md` and screenshots.
+> In progress. Done: the document model, its sample documents, the `$jsonSchema` validators, the seed script with its tests, the CRUD script, the indexes with `explain` before and after, the aggregations script and `comparison.md`. Still to come: screenshots.
 
 ## Objective
 
@@ -8,7 +8,7 @@ This portfolio models Proclus a second time, as a MongoDB document database on A
 
 ## Environment
 
-- MongoDB Atlas M0 free cluster `proclus-cluster`, MongoDB 8.0.34, a three-member replica set on AWS. Database `proclus`. The connection string is `MONGODB_URI` in `.env`; see [SETUP.md](../SETUP.md).
+- MongoDB Atlas M0 free cluster `proclus-cluster`, a three-member replica set on AWS. The seed log (30 October) was captured on MongoDB 8.0.34. Atlas then upgraded the cluster to 8.0.36, which ran scripts 02-04 on 31 October. Each log's header names the version it ran on. Database `proclus`. The connection string is `MONGODB_URI` in `.env`; see [SETUP.md](../SETUP.md).
 - `mongosh` 2.12.0 runs the scripts, and MongoDB Compass 1.52.0 is used for the screenshots.
 - PostgreSQL 18.6 on `localhost:5432` is used only by `00_export_p1_documents.sql`, which builds the documents from the Portfolio 1 tables.
 
@@ -36,6 +36,13 @@ This portfolio models Proclus a second time, as a MongoDB document database on A
    ```
 
    Each one runs `01_seed.js` first, so they can be run in any order and as often as needed. Each ends the same way as the seed script. `03_indexes.js` takes about four minutes, most of it spent sending about 295,000 documents to Atlas, and it leaves the larger data in place.
+4. Run the aggregations, straight after `03_indexes.js`:
+
+   ```
+   mongosh "$MONGODB_URI" --quiet --file portfolio-4-nosql/scripts/04_aggregations.js
+   ```
+
+   It only reads, so it can be run any number of times. It stops with exit code 1 if the larger data from `03_indexes.js` is not there.
 
 ## What I did
 
@@ -77,6 +84,14 @@ The primary key of every table becomes `_id` with the same number, and every oth
 
 Money is stored as `Decimal128` (`NumberDecimal("300000.00")`), never as a double, for the same reason Portfolio 1 uses `NUMERIC(14,2)`. Times are UTC `Date`s; Lagos is UTC+1, so `2026-08-01 09:12+01` becomes `2026-08-01T08:12:00Z`.
 
+7. **Answered Portfolio 2's reporting questions with aggregation pipelines** in [scripts/04_aggregations.js](scripts/04_aggregations.js), on the larger data from step 6. Each prints its result, then its plan, the keys and documents it examined and its server time:
+   - **A1, monthly totals (Q2):** the same pipeline as step 6, with its 13 rows. A check confirms that September's transfers out equal transfers in plus the one reversal.
+   - **A2, top merchants (Q3):** grouped on the merchant snapshot, with no join. A second version groups on `merchant_id` and adds the current names with `$lookup`; it returns the same 10 rows.
+   - **A3, inactive customers (Q4):** `NOT EXISTS` written as a nested `$lookup` (customers to wallets to at most one recent entry), followed by a `$match` on empty results. One row is cross-checked with a plain count.
+   - **A4, running balance (Q5b):** `$setWindowFields` over wallet 2026's completed entries, cut to September afterwards, as Portfolio 2 does. The balance after the wallet's last entry equals its stored balance.
+   - **A5, KYC fields by type:** unwinds the embedded KYC documents and counts which fields each type carries, so the claim that the fields vary is backed by the data.
+8. **Compared the two models** in [comparison.md](comparison.md): the same queries in SQL and in MongoDB, what each makes easier or harder for Proclus, and when I would use each.
+
 ## Evidence
 
 | Evidence | File | What it shows |
@@ -87,6 +102,8 @@ Money is stored as `Decimal128` (`NumberDecimal("300000.00")`), never as a doubl
 | Seed log | [logs/01_seed_output.txt](logs/01_seed_output.txt) | The six collections and ten unique indexes created, then 153 documents loaded and the balance and transfer audits passing (0 of 25 wallets and 0 of 18 transfer legs differ). Tests 5.1-5.15 are rejected by the validators (121) and 5.16-5.23 by the unique indexes (11000), and each line names the rule or index that stopped it. Tests 5.24-5.26 are accepted, which shows what MongoDB does not check. The script was run twice and both outputs were identical. |
 | CRUD log | [logs/02_crud_output.txt](logs/02_crud_output.txt) | The seed output, then each key operation for customer 21. Points to look at: the BVN is verified and the tier raised by one write. Inside the transfer's transaction the debited wallet already reads ₦55,000, while a read outside it still returns ₦80,000. The two aborted transfers leave both balances unchanged. The October statement ends at ₦42,550.00. Deleting wallet 26 is refused, and both audits pass at the end. |
 | Index log | [logs/03_indexes_output.txt](logs/03_indexes_output.txt) | 227,895 ledger entries by type. For each query: the winning plan, keys and documents examined, and five timings, before and after the indexes. The Q2 result (13 rows, the same before and after), the index sizes, and both audits passing on 5,025 wallets and 114,592 transfer legs. |
+| Aggregations log | [logs/04_aggregations_output.txt](logs/04_aggregations_output.txt) | The five pipelines' results with their plans. A1 is answered from the covering index (0 documents examined). A2's snapshot and `$lookup` versions agree. A3 finds 2 inactive customers, after 10,043 keys and documents examined inside its `$lookup`. A4's running balance ends at wallet 2026's stored ₦807,992.00. A5 shows that only the 3 passports and driving licences carry an expiry date. Two runs differed only in timings. |
+| Comparison | [comparison.md](comparison.md) | Q2 side by side in SQL and as a pipeline; a table of the other operations in both databases; what gets easier and harder, with figures from these logs and from Portfolio 2's plans; a recommendation for Proclus. |
 
 ## Analysis
 
@@ -153,6 +170,13 @@ The times are from the second run, which is the one in the log. Atlas M0 is a sh
 - **Covering is worth little here.** The covering index saves 70,942 document reads but only 30 to 115 ms across the two runs, because a dataset this small is already in memory. Q2 still reads a third of the index entries. Portfolio 2 reached the same verdict on its covering index.
 - **Cost:** the three new indexes take 2.7, 2.4 and 6.9 MB, next to 11.3 MB of compressed data, and every ledger insert must now update three more indexes. `{status, created_at}` is a prefix of the covering index, so it is redundant: it is there only for the comparison, and Proclus would keep one or the other. Sizes on disk change a little between runs (6.4 to 7.3 MB for `_id_`), because the collection is rebuilt and compressed afresh each time.
 
+### What the aggregations show
+
+- **Single-collection reports translate directly.** A1, A2 and A4 map clause for clause onto Portfolio 2's SQL. `$setWindowFields` is the window function, and the indexes from step 6 serve them as Portfolio 2's indexes served the SQL. A4 still shows a `SORT` stage on 34 entries: the window sorts on `created_at` and then `_id` to break ties, as Portfolio 2 sorts on `created_at` and `transaction_id`, and the index only covers `created_at`.
+- **The snapshot makes the top-merchants report join-free.** Grouping on the merchant snapshot gives the same result as `$lookup`, because no merchant has been renamed. If one were, the snapshot would show the name each payment was made to, and the `$lookup` would show today's name.
+- **The anti-join is where MongoDB struggles.** A3 took 1.4 s on one run and 3.7 s on the other, for 5,020 customers. Its `$lookup` runs a look-up for every customer's wallets and every wallet's recent entries, 10,043 in all. Portfolio 2's Q4 answered the same question for 50,020 customers in 487 ms with a single Hash Right Anti Join. The 2 customers it finds are Portfolio 1 customers 14 and 20, whose wallets have no ledger entries since 11 July. Every generated wallet has recent entries.
+- **The varying KYC fields are real.** A5 counts them: of 31 KYC documents, only passports and driving licences carry an expiry date, and the 2 documents still waiting for review carry no review fields. Every generated customer is tier 1 with no documents, so tiers 2 and 3 average 1.22 and 3.00 documents. [comparison.md](comparison.md) uses these figures to argue where the document model fits.
+
 ## Challenges and decisions
 
 - **Building the documents from Portfolio 1 instead of retyping them.** Copying 153 rows into a mongosh script by hand would risk small differences from Portfolio 1. The export builds every document from the Portfolio 1 tables in SQL, so both databases hold the same ids, names and amounts. The script is a `.sql` file in `scripts/`, next to the mongosh scripts, which the guide's folder list does not mention.
@@ -164,4 +188,6 @@ The times are from the second run, which is the one in the log. Atlas M0 is a sh
 - **Re-runnable scripts with fixed output.** `02_crud.js` and `03_indexes.js` load `01_seed.js` first, just as every Portfolio 3 script rebuilds the Portfolio 1 data, so each starts from the same 153 documents. `02_crud.js` uses fixed times and `03_indexes.js` a seeded random number generator, so reruns differ only in timings.
 - **Generating 228,000 entries that still pass the audits.** Random ledger entries would break the balance audit. The generator tracks every wallet's balance as it goes, in kobo as whole numbers. It tops a wallet up when it falls under ₦5,000, never sends more than the balance, and writes the wallets last, with the balances the ledger arrived at. Both audits pass on the larger data, as Portfolio 2's four audits did after its seed.
 - **Atlas free-tier limits.** M0 has 512 MB of storage and shares its server with other clusters. The generated data is about 11 MB compressed, plus indexes. Timings move between runs, so the analysis relies on keys and documents examined, which do not.
+- **Aggregations on the larger data only.** `04_aggregations.js` needs the 227,895 entries from `03_indexes.js`, and reloading them takes four minutes. So instead of rerunning `03` first, it checks that the data is there and stops with a message if it is not. Because it only reads, it can be run any number of times.
+- **Atlas upgraded the cluster during the week.** The seed log of 30 October shows MongoDB 8.0.34, and the runs on 31 October printed 8.0.36. Atlas applies patch upgrades to M0 clusters itself. I first copied 8.0.34 into the headers of the 02 and 03 logs, then corrected them to the version the server printed. The Environment section records both versions.
 - **Error details.** `$jsonSchema` errors return a nested `errInfo`. A small function in the script follows it to the rule that failed and prints the rule's `description` from validators.json. The transfer validator combines `$jsonSchema` and `$expr`, so its errors start with an extra `$and` level, which the function skips.
