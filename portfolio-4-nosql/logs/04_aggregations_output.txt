@@ -1,0 +1,74 @@
+// Captured 2026-10-31 16:04 +0100 on MongoDB Atlas proclus-cluster (MongoDB 8.0.36), database proclus, after 03_indexes.js
+// Command: mongosh "$MONGODB_URI" --quiet --file portfolio-4-nosql/scripts/04_aggregations.js
+
+MongoDB 8.0.36; transactions 227895, wallets 5025, customers 5020, merchants 12
+
+== A1. Monthly totals by type, July-September 2026 (Portfolio 2 Q2) ===
+   month    transaction_type     rows        total_ngn
+   2026-07  funding             3485     353983500.00
+   2026-07  merchant_payment    7395      56466728.50
+   2026-07  transfer_in         5934     297291655.00
+   2026-07  transfer_out        5934     297291655.00
+   2026-08  funding             3561     367875500.00
+   2026-08  merchant_payment    7862      60024372.50
+   2026-08  transfer_in         6241     312643865.50
+   2026-08  transfer_out        6241     312643865.50
+   2026-09  funding             3696     376974000.00
+   2026-09  merchant_payment    7977      61761234.75
+   2026-09  reversal               1          8000.00
+   2026-09  transfer_in         6307     314999321.50
+   2026-09  transfer_out        6308     315007321.50
+   explain: GROUP <- PROJECTION_COVERED <- IXSCAN transactions_status_created_at_covering_idx; keys examined 70942, documents examined 0; pipeline 293 ms
+ok    September: transfer_out 315007321.50 = transfer_in 314999321.50 + reversal 8000.00
+
+== A2. Top 10 merchants by money received, 9 September - 8 October 2026 (Q3) ===
+   id  business_name             category        payments       total_ngn
+    7  Balogun Fabrics House     fashion              752      5863615.00
+   11  Marina Screens Cinema     entertainment        739      5736314.00
+    3  Yaba Suya Spot            restaurant           709      5699172.00
+    4  Eko Power Vending         utilities            750      5693836.50
+    9  Festac Learning Centre    education            704      5689253.00
+    1  Lekki Fresh Mart          groceries            738      5620107.00
+    8  Ikeja Wellness Pharmacy   pharmacy             724      5593512.50
+    6  Ojota Data Hub            airtime_data         729      5588774.50
+    2  Mama Tolu Kitchen         restaurant           706      5402073.00
+   10  Computer Village Gadgets  electronics          696      5300861.00
+   explain: GROUP <- FETCH <- IXSCAN transactions_status_created_at_covering_idx; keys examined 18118, documents examined 7932; pipeline 70 ms
+-- the same report with $lookup into merchants (current names):
+   explain: GROUP <- FETCH <- IXSCAN transactions_status_created_at_covering_idx; keys examined 18118, documents examined 7932; pipeline 38 ms
+   explain: $lookup into merchants: 10 documents and 10 keys examined, indexes used ["_id_"], 38 ms
+ok    snapshot and $lookup give the same 10 merchants, names, counts and totals (no merchant has been renamed)
+
+== A3. Inactive customers: no ledger entry since 11 July 2026, top 20 by balance (Q4) ===
+   id  name                     email                              tier  wallets   balance_held
+   14  Hauwa Ibrahim            hauwa.ibrahim@example.com             1        1           0.00
+   20  Folake Akinwale          folake.akinwale@example.com           1        1           0.00
+   explain: PROJECTION_SIMPLE <- COLLSCAN; keys examined 0, documents examined 5020; pipeline 3655 ms
+   explain: $lookup into wallets: 10043 documents and 10043 keys examined, indexes used ["transactions_wallet_id_created_at_idx","wallets_one_per_type_key"], 3642 ms
+ok    cross-check: customer 14's wallets [14] have 0 entries since 11 July
+
+== A4. Running balance on a statement: wallet 2026, September 2026 (Q5b) ===
+   created_at (UTC)   reference          type                 amount  balance_after
+   2026-09-02T08:35Z  TXN26090200252     transfer_out         8400.00      894627.50
+   2026-09-09T08:46Z  TXN26090900188     merchant_payment    11520.50      883107.00
+   2026-09-17T07:02Z  TXN26091700154     transfer_out        87500.00      795607.00
+   2026-09-24T15:29Z  TXN26092400680     merchant_payment     6325.00      789282.00
+   explain: SORT <- PROJECTION_SIMPLE <- FETCH <- IXSCAN transactions_wallet_id_created_at_idx; keys examined 34, documents examined 34; pipeline 0 ms
+ok    running balance after wallet 2026's last entry (807992.00) equals its stored balance (807992.00)
+
+== A5. KYC documents: which fields each type carries (embedded arrays) ===
+   document_type    documents  verified  with expiry_date  with reviewed_at  customers
+   bvn                     13        12                 0                12         13
+   nin                      7         5                 0                 6          7
+   utility_bill             7         6                 0                 7          7
+   passport                 2         2                 2                 2          2
+   drivers_licence          1         1                 1                 1          1
+   voters_card              1         1                 0                 1          1
+   explain: PROJECTION_SIMPLE <- COLLSCAN; keys examined 0, documents examined 5020; pipeline 5 ms
+   tier 1: 5005 customers, 0.00 KYC documents on average
+   tier 2: 9 customers, 1.22 KYC documents on average
+   tier 3: 6 customers, 3.00 KYC documents on average
+ok    only passports and driving licences carry an expiry date
+ok    31 KYC documents counted (expected 31, all from the Portfolio 1 customers)
+
+All checks passed.
