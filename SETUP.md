@@ -61,7 +61,7 @@ After installing, whichever way:
 2. **Database Access** → Add New Database User → authentication by password → role *Read and write to any database*. Write the password down. If it contains any of `$ : / ? # [ ] @`, percent-encode it in the connection string.
 3. **Network Access** → Add IP Address → *Add Current IP Address*. Re-add it whenever your internet connection's IP changes.
 4. **Connect** → *Drivers* (or *Shell*) → copy the connection string. It looks like `mongodb+srv://<db_user>:<db_password>@proclus-cluster.xxxxx.mongodb.net/`. Put it in `.env` as `MONGODB_URI`, with `/proclus` as the database name at the end.
-5. Open MongoDB Compass (already installed) and connect with the same string; save the connection. The **Databases** view and the cluster's replica-set members are the Portfolio 4 and 5 screenshots.
+5. Open MongoDB Compass (already installed) and connect with the same string; save the connection. The cluster's replica-set members are for the Portfolio 5 screenshots; the Portfolio 4 screenshots are `mongosh` console output.
 6. `mongosh` runs the scripts from the terminal. It was installed per user, with no UAC prompt, by:
 
    ```

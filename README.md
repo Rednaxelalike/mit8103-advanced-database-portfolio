@@ -24,7 +24,7 @@ Proclus is a simulated mobile wallet based in Lagos. Customers hold naira, pay m
 | 1 | [portfolio-1-database-design](portfolio-1-database-design/) | Database design and modelling | Done: schema, sample data, constraint tests, ERD, normalisation and screenshots |
 | 2 | [portfolio-2-query-optimisation](portfolio-2-query-optimisation/) | Query processing and optimisation | Done: million-row seed, eight queries, before and after plans, indexes with their costs, performance write-up and screenshots |
 | 3 | [portfolio-3-transactions-concurrency](portfolio-3-transactions-concurrency/) | Transactions and concurrency | Done: commit/rollback, savepoints, the lost update with its three fixes, the non-repeatable read, the deadlock with its fix, and side-by-side screenshots |
-| 4 | [portfolio-4-nosql](portfolio-4-nosql/) | NoSQL and advanced data models | In progress: document model, validators, seed tests, CRUD, indexes with explain, aggregations and comparison done; screenshots to follow |
+| 4 | [portfolio-4-nosql](portfolio-4-nosql/) | NoSQL and advanced data models | Done: document model with validators, seed tests, CRUD with multi-document transactions, indexes with explain before and after, aggregations, comparison with PostgreSQL, and screenshots |
 | 5 | [portfolio-5-distributed-cloud](portfolio-5-distributed-cloud/) | Distributed and cloud database exercise | Not started |
 
 ## Quick start
