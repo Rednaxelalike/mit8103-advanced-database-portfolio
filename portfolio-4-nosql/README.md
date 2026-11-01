@@ -1,7 +1,5 @@
 # Portfolio 4: NoSQL and advanced data models
 
-> In progress. Done: the document model, its sample documents, the `$jsonSchema` validators, the seed script with its tests, the CRUD script, the indexes with `explain` before and after, the aggregations script and `comparison.md`. Still to come: screenshots.
-
 ## Objective
 
 This portfolio models Proclus a second time, as a MongoDB document database on Atlas, using the same entities and sample data as Portfolio 1. It argues, with Proclus's own data, where a document model fits better than the relational one and where it fits worse.
@@ -9,7 +7,7 @@ This portfolio models Proclus a second time, as a MongoDB document database on A
 ## Environment
 
 - MongoDB Atlas M0 free cluster `proclus-cluster`, a three-member replica set on AWS. The seed log (30 October) was captured on MongoDB 8.0.34. Atlas then upgraded the cluster to 8.0.36, which ran scripts 02-04 on 31 October. Each log's header names the version it ran on. Database `proclus`. The connection string is `MONGODB_URI` in `.env`; see [SETUP.md](../SETUP.md).
-- `mongosh` 2.12.0 runs the scripts, and MongoDB Compass 1.52.0 is used for the screenshots.
+- `mongosh` 2.12.0 runs the scripts. The screenshots are its console output, captured on 1 November against MongoDB 8.0.36.
 - PostgreSQL 18.6 on `localhost:5432` is used only by `00_export_p1_documents.sql`, which builds the documents from the Portfolio 1 tables.
 
 ## How to run
@@ -104,6 +102,13 @@ Money is stored as `Decimal128` (`NumberDecimal("300000.00")`), never as a doubl
 | Index log | [logs/03_indexes_output.txt](logs/03_indexes_output.txt) | 227,895 ledger entries by type. For each query: the winning plan, keys and documents examined, and five timings, before and after the indexes. The Q2 result (13 rows, the same before and after), the index sizes, and both audits passing on 5,025 wallets and 114,592 transfer legs. |
 | Aggregations log | [logs/04_aggregations_output.txt](logs/04_aggregations_output.txt) | The five pipelines' results with their plans. A1 is answered from the covering index (0 documents examined). A2's snapshot and `$lookup` versions agree. A3 finds 2 inactive customers, after 10,043 keys and documents examined inside its `$lookup`. A4's running balance ends at wallet 2026's stored ₦807,992.00. A5 shows that only the 3 passports and driving licences carry an expiry date. Two runs differed only in timings. |
 | Comparison | [comparison.md](comparison.md) | Q2 side by side in SQL and as a pipeline; a table of the other operations in both databases; what gets easier and harder, with figures from these logs and from Portfolio 2's plans; a recommendation for Proclus. |
+| Screenshot | [screenshots/p4-01-seed-validators-indexes.png](screenshots/p4-01-seed-validators-indexes.png) | The `mongosh` console for `01_seed.js` on Atlas (MongoDB 8.0.36), sections 1-4. It shows the six collections created with validators, the ten unique indexes named after their Portfolio 1 constraints, and the 153 documents loaded. Every count, plus the balance and transfer audits, prints `ok`. |
+| Screenshot | [screenshots/p4-02-validator-and-unique-tests.png](screenshots/p4-02-validator-and-unique-tests.png) | The 27 seed tests. 5.1-5.15 are rejected with 121 `DocumentValidationFailure`, and each names the rule that failed (for example, the overdraft in 5.3 fails `balance > minimum`). 5.16-5.23 are rejected with 11000 `DuplicateKey`, and each names its index. 5.24-5.26 are accepted, which shows the missing foreign key and RESTRICT checks. The audits still pass afterwards. |
+| Screenshot | [screenshots/p4-03-crud-create-read-update.png](screenshots/p4-03-crud-create-read-update.png) | `02_crud.js` sections 1-3. An under-18 registration is refused, and customer 21 and wallet 26 are inserted. One `findOne` returns Ibrahim Musa's profile with his KYC documents and beneficiary embedded, while his wallets need a second query. One update verifies the BVN and raises the KYC tier. A second save of the same beneficiary matches nothing. |
+| Screenshot | [screenshots/p4-04-crud-transactions-delete.png](screenshots/p4-04-crud-transactions-delete.png) | `02_crud.js` sections 4-7. Inside the transfer's transaction, wallet 26 already reads ₦55,000, while a read outside it still returns ₦80,000. The insufficient-funds transfer and the transfer to frozen wallet 18 are both aborted, with the balances unchanged. The October statement ends at ₦42,550.00, deleting wallet 26 is refused, and the audits pass. |
+| Screenshot | [screenshots/p4-05-explain-before-indexes.png](screenshots/p4-05-explain-before-indexes.png) | `03_indexes.js` sections 1-2: the 227,895 generated ledger entries by type. Before the indexes, Q1 is `SORT <- COLLSCAN` and Q2 is `GROUP <- COLLSCAN`, and both examine all 227,895 documents. The 13-row Q2 result follows. This run is newer than the log, so its timings differ (Q1 median 1,302 ms, Q2 2,694 ms). |
+| Screenshot | [screenshots/p4-06-explain-after-indexes.png](screenshots/p4-06-explain-after-indexes.png) | `03_indexes.js` sections 3-5, the three compound indexes. After them, Q1 is `FETCH <- IXSCAN` with 4 keys and 4 documents examined in 0 ms. Q2 is `PROJECTION_COVERED` with 0 documents examined; the hinted `{status, created_at}` plan fetches all 70,942. The screenshot also shows the summary table, the index sizes and both audits on the larger data. |
+| Screenshot | [screenshots/p4-07-aggregations.png](screenshots/p4-07-aggregations.png) | The whole `04_aggregations.js` run, A1-A5, each with its plan. A1 is covered (0 documents examined), A2's snapshot and `$lookup` versions agree, A3 finds customers 14 and 20, A4's running balance ends at the stored ₦807,992.00, and A5 shows that only passports and driving licences carry an expiry date. Only the timings differ from the log. |
 
 ## Analysis
 
