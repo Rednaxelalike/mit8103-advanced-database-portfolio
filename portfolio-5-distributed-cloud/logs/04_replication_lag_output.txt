@@ -1,0 +1,172 @@
+-- Captured 2026-11-02 10:20 +0100 on PostgreSQL 18.6, database proclus (primary 5432, replica 5433)
+-- Command: portfolio-5-distributed-cloud/tests/04_replication_lag.ps1, which runs the sampler as:
+--   psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/04_replication_lag.sql
+
+
+=== Part 1: lag while the primary is idle ===
+
+SELECT inet_server_port() AS port, application_name, state, sync_state,
+       pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS replay_bytes_behind,
+       write_lag, flush_lag, replay_lag
+FROM pg_stat_replication;
+ port | application_name |   state   | sync_state | replay_bytes_behind |    write_lag    |    flush_lag    |   replay_lag    
+------+------------------+-----------+------------+---------------------+-----------------+-----------------+-----------------
+ 5432 | replica_5433     | streaming | async      |                   0 | 00:00:00.000325 | 00:00:00.000326 | 00:00:01.134983
+(1 row)
+
+
+=== Part 2: lag while Portfolio 2's 01_seed_large.sql runs on the primary ===
+
+CREATE TEMP TABLE lag_samples (
+    sampled_at    timestamptz NOT NULL,
+    load_running  boolean     NOT NULL,
+    load_query    text,
+    wal_bytes     numeric     NOT NULL,  -- WAL written since the load started
+    bytes_behind  numeric     NOT NULL,  -- WAL not yet replayed on the replica
+    write_lag     interval,
+    flush_lag     interval,
+    replay_lag    interval
+);
+CREATE TABLE
+DO $$
+DECLARE
+    started      timestamptz := clock_timestamp();
+    start_lsn    pg_lsn;
+    end_lsn      pg_lsn;
+    load_ended   timestamptz;
+    load_running boolean;
+    load_query   text;
+    rep          record;
+BEGIN
+    LOOP
+        PERFORM pg_stat_clear_snapshot();
+
+        SELECT regexp_replace(left(a.query, 200), '\s+', ' ', 'g') INTO load_query
+        FROM pg_stat_activity a
+        WHERE a.application_name = 'p5_lag_load';
+        load_running := FOUND;
+
+        IF start_lsn IS NULL THEN
+            IF NOT load_running THEN
+                IF clock_timestamp() - started > interval '30 seconds' THEN
+                    RAISE EXCEPTION 'no session named p5_lag_load connected within 30 s: run this test through tests/04_replication_lag.ps1';
+                END IF;
+                PERFORM pg_sleep(0.1);
+                CONTINUE;
+            END IF;
+            start_lsn := pg_current_wal_lsn();
+            PERFORM set_config('p5.load_started', clock_timestamp()::text, false);
+        END IF;
+
+        SELECT * INTO rep FROM pg_stat_replication WHERE application_name = 'replica_5433';
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'replica_5433 is not connected to the primary';
+        END IF;
+
+        IF NOT load_running AND end_lsn IS NULL THEN
+            end_lsn    := pg_current_wal_lsn();
+            load_ended := clock_timestamp();
+            PERFORM set_config('p5.load_ended', load_ended::text, false);
+            PERFORM set_config('p5.end_lsn', end_lsn::text, false);
+        END IF;
+
+        INSERT INTO lag_samples
+        VALUES (clock_timestamp(), load_running, CASE WHEN load_running THEN load_query END,
+                pg_wal_lsn_diff(pg_current_wal_lsn(), start_lsn),
+                greatest(pg_wal_lsn_diff(pg_current_wal_lsn(), rep.replay_lsn), 0),
+                rep.write_lag, rep.flush_lag, rep.replay_lag);
+        COMMIT;
+
+        IF end_lsn IS NOT NULL THEN
+            EXIT WHEN rep.replay_lsn >= end_lsn;
+            IF clock_timestamp() - load_ended > interval '120 seconds' THEN
+                RAISE EXCEPTION 'replica did not replay up to % within 120 s of the load ending', end_lsn;
+            END IF;
+        END IF;
+
+        PERFORM pg_sleep(0.5);
+    END LOOP;
+END
+$$;
+DO
+SELECT (extract(epoch FROM sampled_at - current_setting('p5.load_started')::timestamptz)::int / 10) * 10
+           AS from_second,
+       count(*) AS samples,
+       round((max(wal_bytes) - min(wal_bytes)) / 1048576.0, 1) AS wal_mb_written,
+       round(max(bytes_behind) / 1024.0) AS max_kb_behind,
+       round(extract(epoch FROM max(write_lag))  * 1000, 1) AS max_write_ms,
+       round(extract(epoch FROM max(flush_lag))  * 1000, 1) AS max_flush_ms,
+       round(extract(epoch FROM max(replay_lag)) * 1000, 1) AS max_replay_ms,
+       coalesce(left((array_agg(load_query ORDER BY sampled_at DESC))[1], 45), '(load finished)')
+           AS load_statement
+FROM lag_samples
+GROUP BY 1
+ORDER BY 1;
+ from_second | samples | wal_mb_written | max_kb_behind | max_write_ms | max_flush_ms | max_replay_ms |                load_statement                 
+-------------+---------+----------------+---------------+--------------+--------------+---------------+-----------------------------------------------
+           0 |      19 |           44.3 |          1527 |         63.6 |         63.6 |         222.2 | WITH draws AS MATERIALIZED ( SELECT n, 1 + fl
+          10 |      20 |            0.0 |             1 |          0.7 |          0.8 |           1.0 | CREATE TEMP TABLE seed_transfers ON COMMIT DR
+          20 |      19 |           51.9 |          2040 |        122.5 |        122.5 |         195.1 | INSERT INTO transfers (reference, sender_wall
+          30 |      20 |            2.4 |            32 |          2.7 |          2.7 |         234.3 | INSERT INTO seed_ledger (wallet_id, transacti
+          40 |      20 |            8.3 |          1917 |         83.5 |         83.5 |         182.8 | INSERT INTO transactions (reference, wallet_i
+          50 |      19 |          112.0 |          4096 |         59.8 |         59.8 |         232.1 | INSERT INTO transactions (reference, wallet_i
+          60 |      20 |           99.4 |          4096 |        104.2 |        104.2 |         330.3 | INSERT INTO transactions (reference, wallet_i
+          70 |      20 |          124.0 |          4096 |         85.1 |         85.1 |         220.8 | INSERT INTO transactions (reference, wallet_i
+          80 |      19 |           46.6 |          4096 |         69.5 |         69.5 |         267.2 | INSERT INTO transactions (reference, wallet_i
+          90 |      20 |            7.4 |             7 |          3.0 |          3.1 |         220.9 | INSERT INTO transactions (reference, wallet_i
+         100 |      20 |            9.0 |           326 |          4.6 |          4.6 |         223.6 | INSERT INTO transactions (reference, wallet_i
+         110 |      19 |            8.1 |             8 |          3.6 |          3.6 |         225.4 | INSERT INTO transactions (reference, wallet_i
+         120 |      20 |            6.4 |             8 |          2.7 |          2.7 |         218.6 | UPDATE wallets w SET balance = l.ledger_balan
+         130 |      20 |           26.3 |             3 |         39.5 |         39.5 |         235.9 | DO $$ DECLARE balance_mismatches integer; leg
+         140 |      17 |           18.4 |           887 |          6.3 |          6.3 |         208.6 | (load finished)
+(15 rows)
+
+SELECT count(*) AS samples,
+       round(extract(epoch FROM current_setting('p5.load_ended')::timestamptz
+                              - current_setting('p5.load_started')::timestamptz)::numeric, 1) AS load_seconds,
+       round(max(wal_bytes) / 1048576.0) AS wal_mb_total,
+       round(max(bytes_behind) / 1024.0) AS peak_kb_behind,
+       round(avg(bytes_behind) FILTER (WHERE load_running) / 1024.0) AS avg_kb_behind,
+       round(extract(epoch FROM max(replay_lag)) * 1000, 1) AS peak_replay_ms,
+       round(extract(epoch FROM avg(replay_lag) FILTER (WHERE load_running)) * 1000, 1) AS avg_replay_ms,
+       round(extract(epoch FROM max(sampled_at) - current_setting('p5.load_ended')::timestamptz)::numeric * 1000)
+           AS catch_up_ms
+FROM lag_samples;
+ samples | load_seconds | wal_mb_total | peak_kb_behind | avg_kb_behind | peak_replay_ms | avg_replay_ms | catch_up_ms 
+---------+--------------+--------------+----------------+---------------+----------------+---------------+-------------
+     292 |        148.1 |          601 |           4096 |           331 |          330.3 |         105.9 |           2
+(1 row)
+
+SELECT current_setting('p5.end_lsn') AS load_end_lsn 
+SELECT inet_server_port() AS port,
+       (SELECT count(*) FROM customers)    AS customers,
+       (SELECT count(*) FROM wallets)      AS wallets,
+       (SELECT count(*) FROM transfers)    AS transfers,
+       (SELECT count(*) FROM transactions) AS ledger_rows;
+ port | customers | wallets | transfers | ledger_rows 
+------+-----------+---------+-----------+-------------
+ 5432 |     50020 |   58583 |    199051 |     1040093
+(1 row)
+
+
+=== Part 3: the replica after the load ===
+
+You are now connected to database "proclus" as user "postgres" on host "localhost" (address "::1") at port "5433".
+SELECT inet_server_port() AS port, '2/A64A76D8' AS load_end_lsn,
+       pg_last_wal_replay_lsn() AS replayed_lsn,
+       pg_last_wal_replay_lsn() >= '2/A64A76D8'::pg_lsn AS load_fully_replayed;
+ port | load_end_lsn | replayed_lsn | load_fully_replayed 
+------+--------------+--------------+---------------------
+ 5433 | 2/A64A76D8   | 2/A64A7700   | t
+(1 row)
+
+SELECT inet_server_port() AS port,
+       (SELECT count(*) FROM customers)    AS customers,
+       (SELECT count(*) FROM wallets)      AS wallets,
+       (SELECT count(*) FROM transfers)    AS transfers,
+       (SELECT count(*) FROM transactions) AS ledger_rows;
+ port | customers | wallets | transfers | ledger_rows 
+------+-----------+---------+-----------+-------------
+ 5433 |     50020 |   58583 |    199051 |     1040093
+(1 row)
+

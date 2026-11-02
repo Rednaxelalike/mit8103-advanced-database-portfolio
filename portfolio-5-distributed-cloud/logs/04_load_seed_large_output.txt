@@ -1,0 +1,169 @@
+-- Captured 2026-11-02 10:20 +0100 on PostgreSQL 18.6, database proclus (primary 5432, replica 5433)
+-- Command: portfolio-5-distributed-cloud/tests/04_replication_lag.ps1, which runs the load as:
+--   psql -X -w -U postgres -h localhost -p 5432 -d "dbname=proclus application_name=p5_lag_load" -v ON_ERROR_STOP=1 -f portfolio-2-query-optimisation/sql/01_seed_large.sql
+
+BEGIN
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMIT
+BEGIN
+TRUNCATE TABLE
+INSERT 0 20
+INSERT 0 12
+INSERT 0 31
+INSERT 0 25
+INSERT 0 12
+INSERT 0 47
+INSERT 0 18
+INSERT 0 37
+ customers | merchants | kyc_documents | wallets | transfers 
+-----------+-----------+---------------+---------+-----------
+        20 |        12 |            31 |      25 |        12
+(1 row)
+
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Balance audit passed: all 25 wallet balances equal their ledger totals
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Transfer audit passed: all 18 transfer ledger rows match their transfer
+DO
+COMMIT
+  table_name   | row_count 
+---------------+-----------
+ customers     |        20
+ merchants     |        12
+ kyc_documents |        31
+ wallets       |        25
+ transfers     |        12
+ transactions  |        47
+ beneficiaries |        18
+ audit_log     |        37
+(8 rows)
+
+
+=== Portfolio 2: generating the large data set ===
+Timing is on.
+SET
+Time: 0.165 ms
+BEGIN
+Time: 0.110 ms
+SET
+Time: 0.137 ms
+ setseed 
+---------
+ 
+(1 row)
+
+Time: 1.257 ms
+INSERT 0 50000
+Time: 1828.873 ms (00:01.829)
+INSERT 0 488
+Time: 13.369 ms
+INSERT 0 58558
+Time: 2782.370 ms (00:02.782)
+SELECT 50000
+Time: 698.775 ms
+SELECT 490
+Time: 3.914 ms
+SELECT 10
+Time: 8.450 ms
+ANALYZE
+Time: 127.000 ms
+CREATE TABLE
+Time: 1.553 ms
+INSERT 0 190008
+Time: 4407.369 ms (00:04.407)
+INSERT 0 419406
+Time: 7694.878 ms (00:07.695)
+SELECT 199039
+Time: 6255.615 ms (00:06.256)
+INSERT 0 199039
+Time: 12415.584 ms (00:12.416)
+INSERT 0 391862
+Time: 1129.186 ms (00:01.129)
+INSERT 0 38770
+Time: 3804.174 ms (00:03.804)
+ANALYZE
+Time: 673.064 ms
+INSERT 0 1040046
+Time: 84719.769 ms (01:24.720)
+UPDATE 52635
+Time: 6833.652 ms (00:06.834)
+psql:portfolio-2-query-optimisation/sql/01_seed_large.sql:637: NOTICE:  Balance audit passed: all 58583 wallet balances equal their ledger totals
+psql:portfolio-2-query-optimisation/sql/01_seed_large.sql:637: NOTICE:  Transfer audit passed: all 391880 transfer ledger rows match their transfer
+psql:portfolio-2-query-optimisation/sql/01_seed_large.sql:637: NOTICE:  Running balance audit passed: no wallet is ever below zero
+psql:portfolio-2-query-optimisation/sql/01_seed_large.sql:637: NOTICE:  Sample wallets unchanged: still 47 ledger rows on wallets 1-25
+DO
+Time: 7827.673 ms (00:07.828)
+COMMIT
+Time: 68.058 ms
+VACUUM
+Time: 3991.844 ms (00:03.992)
+Timing is off.
+
+=== Rows per table ===
+  table_name   | row_count 
+---------------+-----------
+ customers     |     50020
+ merchants     |       500
+ kyc_documents |        31
+ wallets       |     58583
+ transfers     |    199051
+ transactions  |   1040093
+ beneficiaries |        18
+ audit_log     |        37
+(8 rows)
+
+=== Ledger rows by type and status ===
+ transaction_type |  status   | row_count |   total_ngn    
+------------------+-----------+-----------+----------------
+ funding          | completed |    227258 | 29436103500.00
+ funding          | failed    |      1518 |   150604500.00
+ funding          | pending   |        19 |     1932500.00
+ merchant_payment | completed |    417697 | 11178023656.53
+ merchant_payment | failed    |      1721 |    50650435.96
+ reversal         | completed |      1013 |    60022700.00
+ transfer_in      | completed |    194927 | 11091967100.00
+ transfer_out     | completed |    195940 | 11151989800.00
+(8 rows)
+
+=== Transfers by status ===
+  status   | transfer_count |   total_ngn    
+-----------+----------------+----------------
+ completed |         194927 | 11091967100.00
+ failed    |           2976 |   170085900.00
+ pending   |            135 |   123255000.00
+ reversed  |           1013 |    60022700.00
+(4 rows)
+
+=== Ledger date range and busiest day ===
+          first_row           |           last_row            | busiest_day_rows 
+------------------------------+-------------------------------+------------------
+ 2025-10-01 07:02:22.75315+01 | 2026-10-08 22:59:56.578198+01 |             6941
+(1 row)
+
+=== Table sizes (table + its indexes) ===
+  table_name  | table_size | index_size 
+--------------+------------+------------
+ transactions | 134 MB     | 101 MB
+ transfers    | 24 MB      | 10 MB
+ wallets      | 9240 kB    | 8880 kB
+ customers    | 6088 kB    | 6624 kB
+ merchants    | 96 kB      | 128 kB
+(5 rows)
+

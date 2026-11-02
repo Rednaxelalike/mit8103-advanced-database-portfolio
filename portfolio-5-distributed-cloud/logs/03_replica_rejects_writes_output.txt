@@ -1,0 +1,89 @@
+-- Captured 2026-11-02 10:20 +0100 on PostgreSQL 18.6, database proclus (primary 5432, replica 5433)
+-- Command: psql -X -w -U postgres -h localhost -p 5433 -d proclus -f portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql
+
+
+=== Which server is this? ===
+
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       current_setting('transaction_read_only') AS transaction_read_only;
+ port | in_recovery | transaction_read_only 
+------+-------------+-----------------------
+ 5433 | t           | on
+(1 row)
+
+
+=== Reads work: Chinedu Okafor's wallet and row counts ===
+
+SELECT inet_server_port() AS port, w.wallet_id,
+       c.first_name || ' ' || c.last_name AS owner, w.balance
+FROM wallets w JOIN customers c USING (customer_id)
+WHERE w.wallet_id = 1;
+ port | wallet_id |     owner      |  balance  
+------+-----------+----------------+-----------
+ 5433 |         1 | Chinedu Okafor | 134549.50
+(1 row)
+
+SELECT inet_server_port() AS port,
+       (SELECT count(*) FROM transactions)  AS ledger_rows,
+       (SELECT count(*) FROM beneficiaries) AS beneficiaries;
+ port | ledger_rows | beneficiaries 
+------+-------------+---------------
+ 5433 |          49 |            18
+(1 row)
+
+
+=== Writes are refused ===
+
+--- 3.1 UPDATE a balance
+UPDATE wallets SET balance = balance + 1000.00 WHERE wallet_id = 1;
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:48: ERROR:  cannot execute UPDATE in a read-only transaction
+SQLSTATE: 25006
+--- 3.2 INSERT a ledger row
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, narration)
+VALUES ('TXN2611029999', 1, 'funding', 1000.00, 'Written to the replica');
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:53: ERROR:  cannot execute INSERT in a read-only transaction
+SQLSTATE: 25006
+--- 3.3 DELETE a saved beneficiary
+DELETE FROM beneficiaries WHERE beneficiary_id = 1;
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:57: ERROR:  cannot execute DELETE in a read-only transaction
+SQLSTATE: 25006
+--- 3.4 Lock a wallet row, as the Portfolio 3 fix does before a transfer
+SELECT wallet_id, balance FROM wallets WHERE wallet_id = 1 FOR UPDATE;
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:61: ERROR:  cannot execute SELECT FOR UPDATE in a read-only transaction
+SQLSTATE: 25006
+--- 3.5 Take the next ledger id from its sequence
+SELECT nextval(pg_get_serial_sequence('transactions', 'transaction_id'));
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:65: ERROR:  cannot execute nextval() in a read-only transaction
+SQLSTATE: 25006
+--- 3.6 CREATE a table
+CREATE TABLE replica_scratch (id int);
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:69: ERROR:  cannot execute CREATE TABLE in a read-only transaction
+SQLSTATE: 25006
+--- 3.7 Ask for a read-write transaction
+BEGIN READ WRITE;
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:75: ERROR:  cannot set transaction read-write mode during recovery
+SQLSTATE: 0A000
+--- 3.8 Switch the session to read-write
+SET default_transaction_read_only = off;
+SET
+UPDATE wallets SET balance = balance + 1000.00 WHERE wallet_id = 1;
+psql:portfolio-5-distributed-cloud/tests/03_replica_rejects_writes.sql:80: ERROR:  cannot execute UPDATE in a read-only transaction
+SQLSTATE: 25006
+
+=== Nothing changed ===
+
+SELECT inet_server_port() AS port, wallet_id, balance FROM wallets WHERE wallet_id = 1;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         1 | 134549.50
+(1 row)
+
+SELECT inet_server_port() AS port,
+       (SELECT count(*) FROM transactions)  AS ledger_rows,
+       (SELECT count(*) FROM beneficiaries) AS beneficiaries,
+       to_regclass('replica_scratch') AS replica_scratch_table;
+ port | ledger_rows | beneficiaries | replica_scratch_table 
+------+-------------+---------------+-----------------------
+ 5433 |          49 |            18 | 
+(1 row)
+

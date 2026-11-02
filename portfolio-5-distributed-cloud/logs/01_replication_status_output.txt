@@ -1,0 +1,94 @@
+-- Captured 2026-11-02 10:20 +0100 on PostgreSQL 18.6, database proclus (primary 5432, replica 5433)
+-- Command: psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/01_replication_status.sql
+
+
+=== Part 1: the primary (port 5432) ===
+
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       current_setting('wal_level')                 AS wal_level,
+       current_setting('max_wal_senders')           AS max_wal_senders,
+       current_setting('synchronous_commit')        AS synchronous_commit,
+       current_setting('synchronous_standby_names') AS synchronous_standby_names;
+ port | in_recovery | wal_level | max_wal_senders | synchronous_commit | synchronous_standby_names 
+------+-------------+-----------+-----------------+--------------------+---------------------------
+ 5432 | f           | replica   | 10              | on                 | 
+(1 row)
+
+SELECT inet_server_port() AS port, pid, usename, application_name, client_addr,
+       state, sync_state, backend_start
+FROM pg_stat_replication;
+ port |  pid  |  usename   | application_name | client_addr |   state   | sync_state |         backend_start         
+------+-------+------------+------------------+-------------+-----------+------------+-------------------------------
+ 5432 | 17208 | replicator | replica_5433     | ::1         | streaming | async      | 2026-11-02 10:02:53.131133+01
+(1 row)
+
+SELECT inet_server_port() AS port,
+       pg_current_wal_lsn() AS primary_lsn, sent_lsn, write_lsn, flush_lsn, replay_lsn,
+       pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS replay_bytes_behind,
+       write_lag, flush_lag, replay_lag
+FROM pg_stat_replication;
+ port | primary_lsn |  sent_lsn  | write_lsn  | flush_lsn  | replay_lsn | replay_bytes_behind | write_lag | flush_lag | replay_lag 
+------+-------------+------------+------------+------------+------------+---------------------+-----------+-----------+------------
+ 5432 | 2/80B43DE8  | 2/80B43DE8 | 2/80B43DE8 | 2/80B43DE8 | 2/80B43DE8 |                   0 |           |           | 
+(1 row)
+
+SELECT inet_server_port() AS port, slot_name, slot_type, active, active_pid,
+       restart_lsn, wal_status
+FROM pg_replication_slots;
+ port |  slot_name   | slot_type | active | active_pid | restart_lsn | wal_status 
+------+--------------+-----------+--------+------------+-------------+------------
+ 5432 | replica_5433 | physical  | t      |      17208 | 2/80B43DE8  | reserved
+(1 row)
+
+SELECT inet_server_port() AS port,
+       (SELECT count(*) FROM customers)    AS customers,
+       (SELECT count(*) FROM wallets)      AS wallets,
+       (SELECT count(*) FROM transfers)    AS transfers,
+       (SELECT count(*) FROM transactions) AS ledger_rows;
+ port | customers | wallets | transfers | ledger_rows 
+------+-----------+---------+-----------+-------------
+ 5432 |        20 |      25 |        12 |          49
+(1 row)
+
+
+=== Part 2: the replica (port 5433) ===
+
+You are now connected to database "proclus" as user "postgres" on host "localhost" (address "::1") at port "5433".
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       current_setting('cluster_name')          AS cluster_name,
+       current_setting('hot_standby')           AS hot_standby,
+       current_setting('transaction_read_only') AS transaction_read_only,
+       current_setting('primary_slot_name')     AS primary_slot_name;
+ port | in_recovery | cluster_name | hot_standby | transaction_read_only | primary_slot_name 
+------+-------------+--------------+-------------+-----------------------+-------------------
+ 5433 | t           | replica_5433 | on          | on                    | replica_5433
+(1 row)
+
+SELECT inet_server_port() AS port, pid, status, sender_host, sender_port, slot_name,
+       received_tli, written_lsn, flushed_lsn, last_msg_receipt_time
+FROM pg_stat_wal_receiver;
+ port | pid  |  status   | sender_host | sender_port |  slot_name   | received_tli | written_lsn | flushed_lsn |     last_msg_receipt_time     
+------+------+-----------+-------------+-------------+--------------+--------------+-------------+-------------+-------------------------------
+ 5433 | 1500 | streaming | localhost   |        5432 | replica_5433 |            1 | 2/80B43DE8  | 2/80B43DE8  | 2026-11-02 10:19:50.350591+01
+(1 row)
+
+SELECT inet_server_port() AS port,
+       pg_last_wal_receive_lsn() AS received_lsn,
+       pg_last_wal_replay_lsn()  AS replayed_lsn,
+       pg_last_xact_replay_timestamp() AS last_replayed_commit,
+       pg_get_wal_replay_pause_state() AS replay_state;
+ port | received_lsn | replayed_lsn |     last_replayed_commit      | replay_state 
+------+--------------+--------------+-------------------------------+--------------
+ 5433 | 2/80B43DE8   | 2/80B43DE8   | 2026-11-02 10:19:50.350031+01 | not paused
+(1 row)
+
+SELECT inet_server_port() AS port,
+       (SELECT count(*) FROM customers)    AS customers,
+       (SELECT count(*) FROM wallets)      AS wallets,
+       (SELECT count(*) FROM transfers)    AS transfers,
+       (SELECT count(*) FROM transactions) AS ledger_rows;
+ port | customers | wallets | transfers | ledger_rows 
+------+-----------+---------+-----------+-------------
+ 5433 |        20 |      25 |        12 |          49
+(1 row)
+

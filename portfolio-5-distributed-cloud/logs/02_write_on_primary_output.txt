@@ -1,0 +1,303 @@
+-- Captured 2026-11-02 10:20 +0100 on PostgreSQL 18.6, database proclus (primary 5432, replica 5433)
+-- Command: psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/02_write_on_primary.sql
+
+BEGIN
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMIT
+BEGIN
+TRUNCATE TABLE
+INSERT 0 20
+INSERT 0 12
+INSERT 0 31
+INSERT 0 25
+INSERT 0 12
+INSERT 0 47
+INSERT 0 18
+INSERT 0 37
+ customers | merchants | kyc_documents | wallets | transfers 
+-----------+-----------+---------------+---------+-----------
+        20 |        12 |            31 |      25 |        12
+(1 row)
+
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Balance audit passed: all 25 wallet balances equal their ledger totals
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Transfer audit passed: all 18 transfer ledger rows match their transfer
+DO
+COMMIT
+  table_name   | row_count 
+---------------+-----------
+ customers     |        20
+ merchants     |        12
+ kyc_documents |        31
+ wallets       |        25
+ transfers     |        12
+ transactions  |        47
+ beneficiaries |        18
+ audit_log     |        37
+(8 rows)
+
+
+=== Part 1: a funding on the primary appears on the replica ===
+Chinedu Okafor (wallet 1) tops up NGN 50,000.00 by bank transfer.
+
+SELECT inet_server_port() AS port, w.wallet_id,
+       c.first_name || ' ' || c.last_name AS owner, w.balance
+FROM wallets w JOIN customers c USING (customer_id)
+WHERE w.wallet_id = 1;
+ port | wallet_id |     owner      |  balance  
+------+-----------+----------------+-----------
+ 5432 |         1 | Chinedu Okafor | 102549.50
+(1 row)
+
+BEGIN;
+BEGIN
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, narration)
+VALUES ('TXN2611020001', 1, 'funding', 50000.00, 'Bank transfer top-up')
+RETURNING transaction_id, reference, transaction_type, amount;
+ transaction_id |   reference   | transaction_type |  amount  
+----------------+---------------+------------------+----------
+             48 | TXN2611020001 | funding          | 50000.00
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance + 50000.00
+WHERE wallet_id = 1
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         1 | 152549.50
+(1 row)
+
+UPDATE 1
+COMMIT;
+COMMIT
+SELECT inet_server_port() AS port, pg_current_wal_lsn() AS commit_lsn 
+Primary WAL position after the commit: 2/80BC4520
+You are now connected to database "proclus" as user "postgres" on host "localhost" (address "::1") at port "5433".
+SELECT set_config('p5.target_lsn', '2/80BC4520', false) AS target_lsn;
+ target_lsn 
+------------
+ 2/80BC4520
+(1 row)
+
+DO $$
+DECLARE
+    started timestamptz := clock_timestamp();
+BEGIN
+    WHILE pg_last_wal_replay_lsn() < current_setting('p5.target_lsn')::pg_lsn LOOP
+        IF clock_timestamp() - started > interval '60 seconds' THEN
+            RAISE EXCEPTION 'replica did not reach % within 60 s', current_setting('p5.target_lsn');
+        END IF;
+        PERFORM pg_sleep(0.005);
+    END LOOP;
+    RAISE NOTICE 'replica had replayed the commit after waiting % ms',
+        round(extract(epoch FROM clock_timestamp() - started) * 1000, 1);
+END
+$$;
+psql:portfolio-5-distributed-cloud/tests/02_write_on_primary.sql:84: NOTICE:  replica had replayed the commit after waiting 1.3 ms
+DO
+SELECT inet_server_port() AS port, pg_last_wal_replay_lsn() AS replayed_lsn,
+       pg_last_wal_replay_lsn() >= current_setting('p5.target_lsn')::pg_lsn AS commit_replayed,
+       pg_last_xact_replay_timestamp() AS commit_time_on_primary;
+ port | replayed_lsn | commit_replayed |    commit_time_on_primary     
+------+--------------+-----------------+-------------------------------
+ 5433 | 2/80BC4520   | t               | 2026-11-02 10:20:02.385885+01
+(1 row)
+
+SELECT inet_server_port() AS port, transaction_id, reference, transaction_type, amount,
+       narration, created_at
+FROM transactions
+WHERE wallet_id = 1 AND created_at >= '2026-11-01'
+ORDER BY created_at, transaction_id;
+ port | transaction_id |   reference   | transaction_type |  amount  |      narration       |          created_at           
+------+----------------+---------------+------------------+----------+----------------------+-------------------------------
+ 5433 |             48 | TXN2611020001 | funding          | 50000.00 | Bank transfer top-up | 2026-11-02 10:20:02.384121+01
+(1 row)
+
+SELECT inet_server_port() AS port, wallet_id, balance FROM wallets WHERE wallet_id = 1;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         1 | 152549.50
+(1 row)
+
+
+=== Part 2: a replica that is behind returns the old balance ===
+
+SELECT inet_server_port() AS port, pg_wal_replay_pause();
+ port | pg_wal_replay_pause 
+------+---------------------
+ 5433 | 
+(1 row)
+
+DO $$
+DECLARE
+    started timestamptz := clock_timestamp();
+BEGIN
+    WHILE pg_get_wal_replay_pause_state() <> 'paused' LOOP
+        IF clock_timestamp() - started > interval '10 seconds' THEN
+            RAISE EXCEPTION 'replay did not pause within 10 s';
+        END IF;
+        PERFORM pg_sleep(0.005);
+    END LOOP;
+END
+$$;
+DO
+SELECT inet_server_port() AS port, pg_get_wal_replay_pause_state() AS replay_state;
+ port | replay_state 
+------+--------------
+ 5433 | paused
+(1 row)
+
+Chinedu pays NGN 18,000.00 at Lekki Fresh Mart (merchant 1), on the primary.
+You are now connected to database "proclus" as user "postgres" on host "localhost" (address "::1") at port "5432".
+BEGIN;
+BEGIN
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, merchant_id, narration)
+VALUES ('TXN2611020002', 1, 'merchant_payment', 18000.00, 1, 'Weekly groceries')
+RETURNING transaction_id, reference, transaction_type, amount;
+ transaction_id |   reference   | transaction_type |  amount  
+----------------+---------------+------------------+----------
+             49 | TXN2611020002 | merchant_payment | 18000.00
+(1 row)
+
+INSERT 0 1
+UPDATE wallets SET balance = balance - 18000.00
+WHERE wallet_id = 1
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         1 | 134549.50
+(1 row)
+
+UPDATE 1
+COMMIT;
+COMMIT
+SELECT inet_server_port() AS port, pg_current_wal_lsn() AS commit_lsn 
+Primary WAL position after the commit: 2/80BC4888
+SELECT inet_server_port() AS port, wallet_id, balance FROM wallets WHERE wallet_id = 1;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5432 |         1 | 134549.50
+(1 row)
+
+You are now connected to database "proclus" as user "postgres" on host "localhost" (address "::1") at port "5433".
+SELECT set_config('p5.target_lsn', '2/80BC4888', false) AS target_lsn;
+ target_lsn 
+------------
+ 2/80BC4888
+(1 row)
+
+SELECT pg_sleep(1);
+ pg_sleep 
+----------
+ 
+(1 row)
+
+SELECT inet_server_port() AS port, pg_get_wal_replay_pause_state() AS replay_state,
+       pg_last_wal_receive_lsn() AS received_lsn,
+       pg_last_wal_replay_lsn()  AS replayed_lsn,
+       pg_wal_lsn_diff(current_setting('p5.target_lsn')::pg_lsn,
+                       pg_last_wal_replay_lsn()) AS replay_bytes_behind;
+ port | replay_state | received_lsn | replayed_lsn | replay_bytes_behind 
+------+--------------+--------------+--------------+---------------------
+ 5433 | paused       | 2/80BC4888   | 2/80BC4520   |                 872
+(1 row)
+
+SELECT inet_server_port() AS port, wallet_id, balance FROM wallets WHERE wallet_id = 1;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         1 | 152549.50
+(1 row)
+
+SELECT inet_server_port() AS port, transaction_id, reference, transaction_type, amount,
+       narration, created_at
+FROM transactions
+WHERE wallet_id = 1 AND created_at >= '2026-11-01'
+ORDER BY created_at, transaction_id;
+ port | transaction_id |   reference   | transaction_type |  amount  |      narration       |          created_at           
+------+----------------+---------------+------------------+----------+----------------------+-------------------------------
+ 5433 |             48 | TXN2611020001 | funding          | 50000.00 | Bank transfer top-up | 2026-11-02 10:20:02.384121+01
+(1 row)
+
+SELECT inet_server_port() AS port, pg_wal_replay_resume();
+ port | pg_wal_replay_resume 
+------+----------------------
+ 5433 | 
+(1 row)
+
+DO $$
+DECLARE
+    started timestamptz := clock_timestamp();
+BEGIN
+    WHILE pg_last_wal_replay_lsn() < current_setting('p5.target_lsn')::pg_lsn LOOP
+        IF clock_timestamp() - started > interval '60 seconds' THEN
+            RAISE EXCEPTION 'replica did not reach % within 60 s', current_setting('p5.target_lsn');
+        END IF;
+        PERFORM pg_sleep(0.005);
+    END LOOP;
+    RAISE NOTICE 'replica applied the payment % ms after replay resumed',
+        round(extract(epoch FROM clock_timestamp() - started) * 1000, 1);
+END
+$$;
+psql:portfolio-5-distributed-cloud/tests/02_write_on_primary.sql:187: NOTICE:  replica applied the payment 1.0 ms after replay resumed
+DO
+SELECT inet_server_port() AS port, pg_get_wal_replay_pause_state() AS replay_state,
+       pg_last_wal_replay_lsn() AS replayed_lsn;
+ port | replay_state | replayed_lsn 
+------+--------------+--------------
+ 5433 | not paused   | 2/80BC4888
+(1 row)
+
+SELECT inet_server_port() AS port, wallet_id, balance FROM wallets WHERE wallet_id = 1;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         1 | 134549.50
+(1 row)
+
+SELECT inet_server_port() AS port, transaction_id, reference, transaction_type, amount,
+       narration, created_at
+FROM transactions
+WHERE wallet_id = 1 AND created_at >= '2026-11-01'
+ORDER BY created_at, transaction_id;
+ port | transaction_id |   reference   | transaction_type |  amount  |      narration       |          created_at           
+------+----------------+---------------+------------------+----------+----------------------+-------------------------------
+ 5433 |             48 | TXN2611020001 | funding          | 50000.00 | Bank transfer top-up | 2026-11-02 10:20:02.384121+01
+ 5433 |             49 | TXN2611020002 | merchant_payment | 18000.00 | Weekly groceries     | 2026-11-02 10:20:02.579179+01
+(2 rows)
+
+
+=== Balance audit on the replica: every stored balance equals its ledger total ===
+SELECT inet_server_port() AS port, count(*) AS wallets_checked,
+       count(*) FILTER (WHERE w.balance <> coalesce(l.ledger_balance, 0)) AS mismatches
+FROM wallets w
+LEFT JOIN (
+    SELECT wallet_id,
+           sum(CASE WHEN transaction_type IN ('funding', 'transfer_in', 'reversal')
+                    THEN amount ELSE -amount END) AS ledger_balance
+    FROM transactions
+    WHERE status = 'completed'
+    GROUP BY wallet_id
+) l USING (wallet_id);
+ port | wallets_checked | mismatches 
+------+-----------------+------------
+ 5433 |              25 |          0
+(1 row)
+
