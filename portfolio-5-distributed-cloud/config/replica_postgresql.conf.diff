@@ -1,0 +1,20 @@
+--- postgresql.conf copied from the primary by pg_basebackup
++++ C:/Users/USER/pg18-replica-5433/postgresql.conf (Portfolio 5)
+@@ -61,7 +61,7 @@
+ 					# comma-separated list of addresses;
+ 					# defaults to 'localhost'; use '*' for all
+ 					# (change requires restart)
+-port = 5432
++port = 5433				# Proclus P5: replica port (primary is 5432)
+ max_connections = 100			# (change requires restart)
+ #reserved_connections = 0		# (change requires restart)
+ #superuser_reserved_connections = 3	# (change requires restart)
+@@ -646,7 +646,7 @@
+ 
+ # - Process Title -
+ 
+-#cluster_name = ''			# added to process titles if nonempty
++cluster_name = 'replica_5433'		# Proclus P5: shown as application_name in pg_stat_replication
+ 					# (change requires restart)
+ #update_process_title = off
+ 

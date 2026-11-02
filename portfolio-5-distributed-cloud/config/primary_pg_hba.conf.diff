@@ -1,0 +1,14 @@
+--- C:/Program Files/PostgreSQL/18/data/pg_hba.conf (installer default)
++++ C:/Program Files/PostgreSQL/18/data/pg_hba.conf (Portfolio 5)
+@@ -117,6 +117,8 @@
+ host    all             all             ::1/128                 scram-sha-256
+ # Allow replication connections from localhost, by a user with the
+ # replication privilege.
+-local   replication     all                                     scram-sha-256
+-host    replication     all             127.0.0.1/32            scram-sha-256
+-host    replication     all             ::1/128                 scram-sha-256
++# Proclus P5 (2026-11-02): only the dedicated replicator role may stream WAL
++# (was "all"); used by the port-5433 streaming replica.
++local   replication     replicator                              scram-sha-256
++host    replication     replicator      127.0.0.1/32            scram-sha-256
++host    replication     replicator      ::1/128                 scram-sha-256
