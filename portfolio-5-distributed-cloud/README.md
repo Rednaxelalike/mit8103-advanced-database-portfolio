@@ -1,6 +1,6 @@
 # Portfolio 5: Distributed and cloud database exercise
 
-> In progress. Done: the local streaming replica and tests 01-04 (2 November), the failover drill and the split-brain check (4 November). Still to come: the Atlas replica-set evidence, the discussion and screenshots.
+> In progress. Done: the local streaming replica and tests 01-04 (2 November), the failover drill, the split-brain check and the Atlas replica-set evidence (4 November). Still to come: the discussion and screenshots.
 
 ## Objective
 
@@ -11,6 +11,7 @@ This portfolio replicates the Proclus database: a local PostgreSQL primary strea
 - **Primary:** PostgreSQL 18.6 on `localhost:5432`, the Windows service `postgresql-x64-18` used by Portfolios 1-3, database `proclus`.
 - **Replica:** a second PostgreSQL 18.6 instance on `localhost:5433`, built from the primary with `pg_basebackup -R` into `C:\Users\USER\pg18-replica-5433` (outside the repo) and started with `pg_ctl`. It streams WAL as the role `replicator` through the replication slot `replica_5433`, asynchronously. Every step is in [setup-replica.md](setup-replica.md).
 - **Connecting:** `psql -X -w -U postgres -h localhost -p 5432 -d proclus` for the primary, `-p 5433` for the replica, with `PGPASSWORD` loaded from `.env` (see [SETUP.md](../SETUP.md)). The replica is a copy of the whole primary, so the same `postgres` password works on both.
+- **Cloud:** the MongoDB Atlas M0 cluster `proclus-cluster` from Portfolio 4, MongoDB 8.0.36. It is the three-member replica set `atlas-100ow8-shard-0` on AWS, region `AF_SOUTH_1` (Cape Town). The scripts connect with `mongosh` 2.12.0 and `MONGODB_URI` from `.env`.
 
 ## How to run
 
@@ -39,6 +40,14 @@ This portfolio replicates the Proclus database: a local PostgreSQL primary strea
    - `05` runs the three `05_failover_*.sql` stages around two commands: `pg_ctl stop -m immediate` on the primary, which Windows runs as administrator after a UAC prompt, and `pg_ctl promote` on the replica. Stage 1 rebuilds the Portfolio 1 sample data first. The drill ends with port 5432 stopped and port 5433 a primary.
    - Before `06`, start the primary's service again: step 1 of "After the failover drill" in setup-replica.md. Afterwards, rebuild the replica (step 3 there).
 
+4. Collect the Atlas evidence. Load `MONGODB_URI` from `.env` (SETUP.md) and make sure your current IP is on the Atlas Network Access list:
+
+   ```
+   mongosh "$MONGODB_URI" --quiet --file portfolio-5-distributed-cloud/tests/07_atlas_replica_set.js
+   ```
+
+   It works on whichever Portfolio 4 data is on Atlas, and first removes what a previous run added, so it can be run again at any time. It ends with `All checks passed.` and exit code 0, or exits with code 1 if any check fails.
+
 ## What I did
 
 1. **Prepared the primary.** It needed no `postgresql.conf` changes: the installer's defaults (`wal_level = replica`, `max_wal_senders = 10`, `max_replication_slots = 10`) already allow streaming replication. I created a dedicated role, `replicator`, with only the `REPLICATION` attribute ([config/primary_replication_role.sql](config/primary_replication_role.sql)). I then narrowed the three `replication` lines of `pg_hba.conf` from any role to `replicator` ([config/primary_pg_hba.conf.diff](config/primary_pg_hba.conf.diff)), and reloaded the configuration without a restart.
@@ -56,6 +65,11 @@ This portfolio replicates the Proclus database: a local PostgreSQL primary strea
    - **The promotion:** `pg_ctl promote` on port 5433.
    - **Stage 3** ([05_failover_3_promoted.sql](tests/05_failover_3_promoted.sql)): the promoted server is on timeline 2 and still holds the ₦40,000 transfer. Tunde refunds Ibrahim ₦15,000, and the balance audit passes. The runner times each step and copies the replica's own log lines for the promotion into the evidence log.
 8. **Brought the old primary back** with its Windows service, and ran [tests/06_split_brain.sql](tests/06_split_brain.sql) while port 5433 was still promoted. Both servers accepted writes and disagreed about wallet 9. I then rebuilt the replica from port 5432 ("After the failover drill" in setup-replica.md). The drill and the rebuild were each run twice; the logs come from the second run.
+9. **Collected the cloud evidence on Atlas** with [tests/07_atlas_replica_set.js](tests/07_atlas_replica_set.js):
+   - It lists the replica set's members with `hello` and `rs.status()`, then connects to each member directly to show its role. A write sent straight to a secondary is refused.
+   - It repeats the local test 02 on Atlas: Chinedu Okafor funds wallet 1 with ₦50,000 as a multi-document transaction committed with `w: "majority"`.
+   - It writes two audit entries, one with `w: 3` and one with `w: 4`.
+   - It reads the balance from the primary, and the November statement from a secondary with `readConcern: "majority"` in a causally consistent session.
 
 ## Evidence
 
@@ -70,6 +84,7 @@ This portfolio replicates the Proclus database: a local PostgreSQL primary strea
 | Load log | [logs/04_load_seed_large_output.txt](logs/04_load_seed_large_output.txt) | The load itself: Portfolio 2's seed output, ending with its four audits passing and the table sizes. |
 | Failover log | [logs/05_failover_output.txt](logs/05_failover_output.txt) | Timestamped steps. Stage 1: the ₦40,000 transfer commits on the primary (timeline `00000001`) and is replayed on the replica within 2.2 ms. The primary is stopped at 10:59:32.135, the service shows `Stopped`, and a connection to 5432 is refused. Stage 2: the replica has received and replayed the same position, has no WAL receiver connected, still lists Tunde's transfer, and refuses the refund with 25006. `pg_ctl promote` takes 0.4 s, and the replica's log shows `received promote request`, `selected new timeline ID: 2`, `database system is ready to accept connections`. Stage 3: `in_recovery = f`, timeline `00000002`, the ₦40,000 transfer is there, the refund commits (wallet 5 ₦275,000, wallet 9 ₦290,000), there are 0 replicas, and 0 of 25 balances mismatch. Writes were impossible for 5.0 s. |
 | Split-brain log | [logs/06_split_brain_output.txt](logs/06_split_brain_output.txt) | After its service restarts, port 5432 is a primary again on timeline 1. It has the ₦40,000 transfer but not the refund: wallet 9 is ₦305,000, and its slot is inactive. Port 5433 is also a primary, on timeline 2, with the refund: wallet 9 is ₦290,000. Two servers each accepting writes, with different balances. |
+| Atlas log | [logs/07_atlas_replica_set_output.txt](logs/07_atlas_replica_set_output.txt) | Replica set `atlas-100ow8-shard-0` on AWS `AF_SOUTH_1`. `rs.status()` lists three healthy members: `shard-00-02` PRIMARY, and `shard-00-00` and `shard-00-01` SECONDARY, both syncing from the primary, 1 s behind it at one-second resolution. Connected directly, only `shard-00-02` reports `isWritablePrimary true`, and a write sent to `shard-00-00` is refused with `NotWritablePrimary` (10107). The funding commits with `w: "majority"` as ledger entry 227896. `w: 3` is acknowledged. `w: 4` fails with `UnsatisfiableWriteConcern` (100), "Not enough data-bearing nodes", yet the entry is stored. The balance, ₦152,549.50, is read from the primary. The statement, read from secondary `shard-00-00`, includes the funding. All 11 checks pass. The log comes from a second run, which first removed the first run's funding and audit entries. |
 
 ## Analysis
 
@@ -125,6 +140,17 @@ For this lab I did the reverse and kept port 5432, which every other script uses
 
 **What the drill leaves exposed.** For the time between the promotion and the rebuild, Proclus ran on one server with no replica (`replicas_connected = 0` in stage 3). A second failure in that window would lose everything written since the first.
 
+### The Atlas replica set
+
+The Atlas cluster behind Portfolio 4 has had this set-up all along, managed by MongoDB: three data-bearing members on AWS in Cape Town, one primary and two secondaries, each copying the primary's oplog (`syncing from shard-00-02`). It differs from the local pair in three ways that matter for Proclus.
+
+- **Durability is chosen per write.** PostgreSQL's choice is made for the whole server in `synchronous_standby_names`. MongoDB's is made per write, through its write concern.
+  - `w: "majority"` returned only once two of the three members had the funding. Whichever secondary would be elected if the primary failed is guaranteed to hold it. This is what the local asynchronous replica could not promise, and what money movements need.
+  - `w: 3` waits for every member. It is stronger, but a single slow or failed secondary then stalls every such write.
+  - `w: 4` cannot be met with three data-bearing members, so the server says so: `UnsatisfiableWriteConcern`. The entry was stored on the primary anyway. A write-concern error reports that the acknowledgement failed; it does not undo the write. An application that simply retried would record the entry twice, so retries need an idempotent key, such as Proclus's unique `reference`.
+- **Reads choose their member.** `readPref('secondary')` sent the statement to `shard-00-00`, while the balance came from the primary. This is the local rule (statements from the replica, balances from the primary) applied per query instead of per connection string. A secondary can still be behind; `rs.status()` showed both about one second behind the primary. Reading the statement with `readConcern: "majority"`, in the same causally consistent session as the funding, made the secondary wait until it had applied that session's own write. So the customer's statement could not miss the top-up they had just made. The local replica offers no such guarantee; test 02 had to wait on WAL positions by hand.
+- **Failover is automatic.** If the primary stopped answering, the two secondaries would elect a new primary between themselves, with no `pg_ctl promote` and no person deciding. A majority is needed to elect, so a member cut off on its own cannot become a second primary: the split brain of test 06 cannot happen. The free M0 tier does not let me trigger a failover or add shards, so that part rests on the local drill and the discussion.
+
 ## Challenges and decisions
 
 - **A second instance, not a container.** Docker was dropped in Phase 0, so the replica is a second data folder run by the same PostgreSQL 18.6 binaries with `pg_ctl`. It runs under my own account, not as a Windows service, so it has to be started again after a reboot (setup-replica.md, "Day to day").
@@ -139,3 +165,6 @@ For this lab I did the reverse and kept port 5432, which every other script uses
 - **Crashing a Windows service.** The primary runs as the service `postgresql-x64-18` under NetworkService, and my account may not stop it without administrator rights. The runner starts `pg_ctl stop -m immediate` with `-Verb RunAs`, so Windows asks once through UAC. I chose `-m immediate` over `Stop-Service` because a clean shutdown sends the replica every last WAL record before stopping, which would hide what a real crash risks.
 - **Timing the outage honestly.** The first drill reported 10.5 s without writes, but that included the seconds the UAC prompt waited for my click. The runner now takes the crash time when the elevated `pg_ctl` returns. I rebuilt the replica and ran the drill again: 5.0 s.
 - **Getting back to normal.** After the drill there were two ways back: keep port 5433 as the primary and rewind port 5432 into its replica, or restart port 5432 and rebuild port 5433. The first is the production answer. I chose the second because every portfolio's scripts use port 5432 and the guide only asks for the drill itself. The cost is that the refund written on timeline 2 was discarded, which test 06 records first.
+- **What the free Atlas tier allows.** I first probed the M0 cluster from a scratch script. `rs.status()`, `hello` and direct connections to each member work. `rs.conf()` and the replication details in the `local` database are refused (`Unauthorized`), and the free tier offers no failover test or sharding. So the evidence uses what M0 allows: member states and optimes from `rs.status()`, each member's own `hello`, and `explain().serverInfo.host` to show which member answered a read.
+- **Writing to Portfolio 4's data.** The Atlas test adds a real funding, like the local test 02, rather than writing to a scratch collection. Running Portfolio 4's seed first would have wiped the larger data that its `04_aggregations.js` needs. Instead the script removes its own funding and audit entries from any earlier run, in one transaction, so every run starts from the same balance and Portfolio 4's other documents are untouched.
+- **Proving which member answered.** A read with `readPref('secondary')` does not say where it went. Its `explain()` does, in `serverInfo.host`, which the script compares with the members' states from `rs.status()`.
