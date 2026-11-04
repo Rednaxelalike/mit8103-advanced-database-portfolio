@@ -1,0 +1,56 @@
+// Captured 2026-11-04 11:10 +0100 on MongoDB Atlas proclus-cluster (MongoDB 8.0.36), database proclus
+// Command: mongosh "$MONGODB_URI" --quiet --file portfolio-5-distributed-cloud/tests/07_atlas_replica_set.js
+
+=== 1. The replica set ===
+replica set atlas-100ow8-shard-0, MongoDB 8.0.36
+members (hello.hosts): 3
+  ac-yq6rbkh-shard-00-00.1obeoic
+  ac-yq6rbkh-shard-00-01.1obeoic
+  ac-yq6rbkh-shard-00-02.1obeoic
+this connection's primary: ac-yq6rbkh-shard-00-02.1obeoic
+primary's tags: provider AWS, region AF_SOUTH_1, availability zone afs1-az3, node type ELECTABLE
+
+rs.status():
+  member                          state      health  last applied (UTC)        lag   syncing from
+  ac-yq6rbkh-shard-00-00.1obeoic  SECONDARY  1       2026-11-04T10:10:21.000Z  1 s   ac-yq6rbkh-shard-00-02.1obeoic
+  ac-yq6rbkh-shard-00-01.1obeoic  SECONDARY  1       2026-11-04T10:10:21.000Z  1 s   ac-yq6rbkh-shard-00-02.1obeoic
+  ac-yq6rbkh-shard-00-02.1obeoic  PRIMARY    1       2026-11-04T10:10:22.000Z  0 s   -
+ok   three members: one PRIMARY and two SECONDARY
+ok   every member healthy
+
+=== 2. Each member on its own ===
+  ac-yq6rbkh-shard-00-00.1obeoic  isWritablePrimary false secondary true  last write 2026-11-04T10:10:22.000Z
+  ac-yq6rbkh-shard-00-01.1obeoic  isWritablePrimary false secondary true  last write 2026-11-04T10:10:23.000Z
+  ac-yq6rbkh-shard-00-02.1obeoic  isWritablePrimary true  secondary false last write 2026-11-04T10:10:24.000Z
+
+An audit entry written straight to ac-yq6rbkh-shard-00-00.1obeoic:
+  refused: NotWritablePrimary (10107): not primary
+ok   the secondary refused the write
+
+=== 3. Writes and write concern ===
+removed the funding TXN2611040101 and audit entries left by a previous run
+Chinedu Okafor, wallet 1: NGN 102549.50
+
+3.1 funding TXN2611040101 (ledger entry 227896) committed with writeConcern { w: "majority" }
+ok   funding committed and acknowledged by a majority
+
+3.2 audit entry 38 with writeConcern { w: 3 }: n 1, ok 1, writeConcernError none
+ok   w: 3 acknowledged by all three members
+
+3.3 audit entry 39 with writeConcern { w: 4 }: UnsatisfiableWriteConcern (100): Not enough data-bearing nodes
+    audit entries with _id 39 stored anyway: 1
+ok   w: 4 refused: only three data-bearing members
+ok   the w: 4 insert was still applied
+
+=== 4. Reads and read preference ===
+4.1 balance of wallet 1 read from ac-yq6rbkh-shard-00-02.1obeoic (readPref primary): NGN 152549.50
+ok   balance read from the primary
+ok   balance is NGN 102549.50 + NGN 50000.00
+
+4.2 November statement for wallet 1 read from ac-yq6rbkh-shard-00-00.1obeoic (readPref secondary, readConcern majority, causal session):
+    227896  TXN2611040101  funding             NGN 50000.00  2026-11-04T10:00:00.000Z
+ok   statement read from a secondary
+ok   the secondary returned the funding
+
+=== Result ===
+All checks passed.
