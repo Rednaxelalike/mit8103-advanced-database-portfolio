@@ -1,0 +1,71 @@
+-- Captured 2026-11-04 10:59 +0100 on PostgreSQL 18.6, database proclus (old primary 5432 restarted, promoted replica 5433)
+-- Command: psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/06_split_brain.sql
+
+
+=== Port 5432: the old primary, restarted ===
+
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       substr(pg_walfile_name(pg_current_wal_lsn()), 1, 8) AS timeline,
+       pg_postmaster_start_time() AS started;
+ port | in_recovery | timeline |            started            
+------+-------------+----------+-------------------------------
+ 5432 | f           | 00000001 | 2026-11-04 10:59:40.400873+01
+(1 row)
+
+SELECT inet_server_port() AS port, reference, sender_wallet_id, receiver_wallet_id, amount, narration
+FROM transfers
+WHERE reference IN ('TRF2611040001', 'TRF2611040002')
+ORDER BY reference;
+ port |   reference   | sender_wallet_id | receiver_wallet_id |  amount  |    narration     
+------+---------------+------------------+--------------------+----------+------------------
+ 5432 | TRF2611040001 |                5 |                  9 | 40000.00 | Generator repair
+(1 row)
+
+SELECT inet_server_port() AS port, wallet_id, balance
+FROM wallets
+WHERE wallet_id IN (5, 9)
+ORDER BY wallet_id;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5432 |         5 | 260000.00
+ 5432 |         9 | 305000.00
+(2 rows)
+
+SELECT inet_server_port() AS port, slot_name, active, restart_lsn
+FROM pg_replication_slots;
+ port |  slot_name   | active | restart_lsn 
+------+--------------+--------+-------------
+ 5432 | replica_5433 | f      | 2/A7000028
+(1 row)
+
+
+=== Port 5433: the promoted replica ===
+
+You are now connected to database "proclus" as user "postgres" on host "localhost" (address "::1") at port "5433".
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       substr(pg_walfile_name(pg_current_wal_lsn()), 1, 8) AS timeline;
+ port | in_recovery | timeline 
+------+-------------+----------
+ 5433 | f           | 00000002
+(1 row)
+
+SELECT inet_server_port() AS port, reference, sender_wallet_id, receiver_wallet_id, amount, narration
+FROM transfers
+WHERE reference IN ('TRF2611040001', 'TRF2611040002')
+ORDER BY reference;
+ port |   reference   | sender_wallet_id | receiver_wallet_id |  amount  |        narration        
+------+---------------+------------------+--------------------+----------+-------------------------
+ 5433 | TRF2611040001 |                5 |                  9 | 40000.00 | Generator repair
+ 5433 | TRF2611040002 |                9 |                  5 | 15000.00 | Refund for extra diesel
+(2 rows)
+
+SELECT inet_server_port() AS port, wallet_id, balance
+FROM wallets
+WHERE wallet_id IN (5, 9)
+ORDER BY wallet_id;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         5 | 275000.00
+ 5433 |         9 | 290000.00
+(2 rows)
+

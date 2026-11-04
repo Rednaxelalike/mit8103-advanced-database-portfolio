@@ -1,0 +1,362 @@
+-- Captured 2026-11-04 10:59 +0100 on PostgreSQL 18.6, database proclus (primary 5432, replica 5433)
+-- Command: portfolio-5-distributed-cloud/tests/05_failover.ps1
+
+##### 10:59:28.132  Step 1: the last transfer on the primary, replayed on the replica
+> psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/05_failover_1_primary.sql
+BEGIN
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMIT
+BEGIN
+TRUNCATE TABLE
+INSERT 0 20
+INSERT 0 12
+INSERT 0 31
+INSERT 0 25
+INSERT 0 12
+INSERT 0 47
+INSERT 0 18
+INSERT 0 37
+ customers | merchants | kyc_documents | wallets | transfers 
+-----------+-----------+---------------+---------+-----------
+        20 |        12 |            31 |      25 |        12
+(1 row)
+
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Balance audit passed: all 25 wallet balances equal their ledger totals
+psql:portfolio-1-database-design/sql/02_sample_data.sql:334: NOTICE:  Transfer audit passed: all 18 transfer ledger rows match their transfer
+DO
+COMMIT
+  table_name   | row_count 
+---------------+-----------
+ customers     |        20
+ merchants     |        12
+ kyc_documents |        31
+ wallets       |        25
+ transfers     |        12
+ transactions  |        47
+ beneficiaries |        18
+ audit_log     |        37
+(8 rows)
+
+
+=== The primary (port 5432) before the failure ===
+
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       substr(pg_walfile_name(pg_current_wal_lsn()), 1, 8) AS timeline;
+ port | in_recovery | timeline 
+------+-------------+----------
+ 5432 | f           | 00000001
+(1 row)
+
+SELECT inet_server_port() AS port, application_name, state, sync_state,
+       pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS replay_bytes_behind
+FROM pg_stat_replication;
+ port | application_name |   state   | sync_state | replay_bytes_behind 
+------+------------------+-----------+------------+---------------------
+ 5432 | replica_5433     | streaming | async      |                3088
+(1 row)
+
+SELECT inet_server_port() AS port, w.wallet_id,
+       c.first_name || ' ' || c.last_name AS owner, w.balance
+FROM wallets w JOIN customers c USING (customer_id)
+WHERE w.wallet_id IN (5, 9)
+ORDER BY w.wallet_id;
+ port | wallet_id |    owner     |  balance  
+------+-----------+--------------+-----------
+ 5432 |         5 | Ibrahim Musa | 300000.00
+ 5432 |         9 | Tunde Bakare | 265000.00
+(2 rows)
+
+
+Ibrahim Musa (wallet 5) sends NGN 40,000.00 to Tunde Bakare (wallet 9).
+
+BEGIN;
+BEGIN
+UPDATE wallets SET balance = balance - 40000.00
+WHERE wallet_id = 5 AND balance >= 40000.00
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         5 | 260000.00
+(1 row)
+
+UPDATE 1
+UPDATE wallets SET balance = balance + 40000.00
+WHERE wallet_id = 9
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         9 | 305000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2611040001', 5, 9, 40000.00, 'Generator repair', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          13 | TRF2611040001 | completed
+(1 row)
+
+INSERT 0 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+SELECT v.reference, v.wallet_id, v.transaction_type, 40000.00, t.transfer_id, 'Generator repair'
+FROM transfers t
+CROSS JOIN (VALUES ('TXN2611040001', 5, 'transfer_out'),
+                   ('TXN2611040002', 9, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+WHERE t.reference = 'TRF2611040001'
+RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount  
+----------------+---------------+-----------+------------------+----------
+             48 | TXN2611040001 |         5 | transfer_out     | 40000.00
+             49 | TXN2611040002 |         9 | transfer_in      | 40000.00
+(2 rows)
+
+INSERT 0 2
+COMMIT;
+COMMIT
+SELECT inet_server_port() AS port, pg_current_wal_lsn() AS commit_lsn 
+Primary WAL position after the commit: 2/A80F50A0
+You are now connected to database "proclus" as user "postgres" on host "localhost" (address "::1") at port "5433".
+SELECT set_config('p5.target_lsn', '2/A80F50A0', false) AS target_lsn;
+ target_lsn 
+------------
+ 2/A80F50A0
+(1 row)
+
+DO $$
+DECLARE
+    started timestamptz := clock_timestamp();
+BEGIN
+    WHILE pg_last_wal_replay_lsn() < current_setting('p5.target_lsn')::pg_lsn LOOP
+        IF clock_timestamp() - started > interval '60 seconds' THEN
+            RAISE EXCEPTION 'replica did not reach % within 60 s', current_setting('p5.target_lsn');
+        END IF;
+        PERFORM pg_sleep(0.005);
+    END LOOP;
+    RAISE NOTICE 'replica had replayed the transfer after waiting % ms',
+        round(extract(epoch FROM clock_timestamp() - started) * 1000, 1);
+END
+$$;
+psql:portfolio-5-distributed-cloud/tests/05_failover_1_primary.sql:97: NOTICE:  replica had replayed the transfer after waiting 2.2 ms
+DO
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       reference, sender_wallet_id, receiver_wallet_id, amount, status
+FROM transfers
+WHERE reference = 'TRF2611040001';
+ port | in_recovery |   reference   | sender_wallet_id | receiver_wallet_id |  amount  |  status   
+------+-------------+---------------+------------------+--------------------+----------+-----------
+ 5433 | t           | TRF2611040001 |                5 |                  9 | 40000.00 | completed
+(1 row)
+
+SELECT inet_server_port() AS port, wallet_id, balance
+FROM wallets
+WHERE wallet_id IN (5, 9)
+ORDER BY wallet_id;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         5 | 260000.00
+ 5433 |         9 | 305000.00
+(2 rows)
+
+
+##### 10:59:29.121  Step 2: the primary crashes (pg_ctl stop -m immediate, run as administrator)
+pg_ctl stop exited with code 0 at 10:59:32.135
+Windows service postgresql-x64-18: Stopped
+> psql -X -w -U postgres -h localhost -p 5432 -d proclus -c "SELECT 1"
+psql: error: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+##### 10:59:36.450  Step 3: the replica on its own, before promotion
+> psql -X -w -U postgres -h localhost -p 5433 -d proclus -f portfolio-5-distributed-cloud/tests/05_failover_2_standby_alone.sql
+
+=== The replica (port 5433) with the primary down ===
+
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       pg_last_wal_receive_lsn() AS received_lsn,
+       pg_last_wal_replay_lsn()  AS replayed_lsn,
+       pg_last_xact_replay_timestamp() AS last_replayed_commit;
+ port | in_recovery | received_lsn | replayed_lsn |     last_replayed_commit      
+------+-------------+--------------+--------------+-------------------------------
+ 5433 | t           | 2/A80F50D8   | 2/A80F50D8   | 2026-11-04 10:59:28.703028+01
+(1 row)
+
+SELECT count(*) AS wal_receivers_connected FROM pg_stat_wal_receiver;
+ wal_receivers_connected 
+-------------------------
+                       0
+(1 row)
+
+SELECT inet_server_port() AS port, transaction_id, reference, transaction_type, amount, narration
+FROM transactions
+WHERE wallet_id = 9 AND created_at >= '2026-11-01'
+ORDER BY created_at, transaction_id;
+ port | transaction_id |   reference   | transaction_type |  amount  |    narration     
+------+----------------+---------------+------------------+----------+------------------
+ 5433 |             49 | TXN2611040002 | transfer_in      | 40000.00 | Generator repair
+(1 row)
+
+--- A transfer attempted on the standby
+UPDATE wallets SET balance = balance - 15000.00 WHERE wallet_id = 9 AND balance >= 15000.00;
+psql:portfolio-5-distributed-cloud/tests/05_failover_2_standby_alone.sql:40: ERROR:  cannot execute UPDATE in a read-only transaction
+SQLSTATE: 25006
+
+##### 10:59:36.774  Step 4: promote the replica (pg_ctl promote)
+waiting for server to promote.... done
+server promoted
+pg_ctl promote took 400 ms
+
+The replica's server log from the crash to the promotion:
+  2026-11-04 10:59:35 WAT FATAL:  streaming replication receiver "replica_5433" could not connect to the primary server: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+  2026-11-04 10:59:36 WAT ERROR:  cannot execute UPDATE in a read-only transaction
+  2026-11-04 10:59:36 WAT STATEMENT:  UPDATE wallets SET balance = balance - 15000.00 WHERE wallet_id = 9 AND balance >= 15000.00;
+  2026-11-04 10:59:36 WAT LOG:  received promote request
+  2026-11-04 10:59:36 WAT FATAL:  terminating walreceiver process due to administrator command
+  2026-11-04 10:59:36 WAT LOG:  redo done at 2/A80F50A0 system usage: CPU: user: 0.01 s, system: 0.17 s, elapsed: 25.81 s
+  2026-11-04 10:59:36 WAT LOG:  last completed transaction was at log time 2026-11-04 10:59:28.703028+01
+  2026-11-04 10:59:36 WAT LOG:  selected new timeline ID: 2
+  2026-11-04 10:59:37 WAT LOG:  archive recovery complete
+  2026-11-04 10:59:37 WAT LOG:  checkpoint starting: force
+  2026-11-04 10:59:37 WAT LOG:  database system is ready to accept connections
+
+##### 10:59:37.531  Step 5: the promoted replica takes writes
+> psql -X -w -U postgres -h localhost -p 5433 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/05_failover_3_promoted.sql
+
+=== Port 5433 after pg_ctl promote ===
+
+SELECT inet_server_port() AS port, pg_is_in_recovery() AS in_recovery,
+       current_setting('transaction_read_only') AS transaction_read_only,
+       substr(pg_walfile_name(pg_current_wal_lsn()), 1, 8) AS timeline;
+ port | in_recovery | transaction_read_only | timeline 
+------+-------------+-----------------------+----------
+ 5433 | f           | off                   | 00000002
+(1 row)
+
+SELECT inet_server_port() AS port, reference, sender_wallet_id, receiver_wallet_id,
+       amount, status
+FROM transfers
+WHERE reference = 'TRF2611040001';
+ port |   reference   | sender_wallet_id | receiver_wallet_id |  amount  |  status   
+------+---------------+------------------+--------------------+----------+-----------
+ 5433 | TRF2611040001 |                5 |                  9 | 40000.00 | completed
+(1 row)
+
+SELECT inet_server_port() AS port, wallet_id, balance
+FROM wallets
+WHERE wallet_id IN (5, 9)
+ORDER BY wallet_id;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         5 | 260000.00
+ 5433 |         9 | 305000.00
+(2 rows)
+
+
+Tunde Bakare (wallet 9) sends NGN 15,000.00 back to Ibrahim Musa (wallet 5), on the new primary.
+
+BEGIN;
+BEGIN
+UPDATE wallets SET balance = balance - 15000.00
+WHERE wallet_id = 9 AND balance >= 15000.00
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         9 | 290000.00
+(1 row)
+
+UPDATE 1
+UPDATE wallets SET balance = balance + 15000.00
+WHERE wallet_id = 5
+RETURNING wallet_id, balance;
+ wallet_id |  balance  
+-----------+-----------
+         5 | 275000.00
+(1 row)
+
+UPDATE 1
+INSERT INTO transfers (reference, sender_wallet_id, receiver_wallet_id, amount,
+                       narration, status, processed_at)
+VALUES ('TRF2611040002', 9, 5, 15000.00, 'Refund for extra diesel', 'completed', now())
+RETURNING transfer_id, reference, status;
+ transfer_id |   reference   |  status   
+-------------+---------------+-----------
+          46 | TRF2611040002 | completed
+(1 row)
+
+INSERT 0 1
+INSERT INTO transactions (reference, wallet_id, transaction_type, amount, transfer_id, narration)
+SELECT v.reference, v.wallet_id, v.transaction_type, 15000.00, t.transfer_id, 'Refund for extra diesel'
+FROM transfers t
+CROSS JOIN (VALUES ('TXN2611040003', 9, 'transfer_out'),
+                   ('TXN2611040004', 5, 'transfer_in')) AS v (reference, wallet_id, transaction_type)
+WHERE t.reference = 'TRF2611040002'
+RETURNING transaction_id, reference, wallet_id, transaction_type, amount;
+ transaction_id |   reference   | wallet_id | transaction_type |  amount  
+----------------+---------------+-----------+------------------+----------
+             67 | TXN2611040003 |         9 | transfer_out     | 15000.00
+             68 | TXN2611040004 |         5 | transfer_in      | 15000.00
+(2 rows)
+
+INSERT 0 2
+COMMIT;
+COMMIT
+SELECT inet_server_port() AS port, wallet_id, balance
+FROM wallets
+WHERE wallet_id IN (5, 9)
+ORDER BY wallet_id;
+ port | wallet_id |  balance  
+------+-----------+-----------
+ 5433 |         5 | 275000.00
+ 5433 |         9 | 290000.00
+(2 rows)
+
+SELECT count(*) AS replicas_connected FROM pg_stat_replication;
+ replicas_connected 
+--------------------
+                  0
+(1 row)
+
+
+=== Balance audit on the new primary: every stored balance equals its ledger total ===
+SELECT inet_server_port() AS port, count(*) AS wallets_checked,
+       count(*) FILTER (WHERE w.balance <> coalesce(l.ledger_balance, 0)) AS mismatches
+FROM wallets w
+LEFT JOIN (
+    SELECT wallet_id,
+           sum(CASE WHEN transaction_type IN ('funding', 'transfer_in', 'reversal')
+                    THEN amount ELSE -amount END) AS ledger_balance
+    FROM transactions
+    WHERE status = 'completed'
+    GROUP BY wallet_id
+) l USING (wallet_id);
+ port | wallets_checked | mismatches 
+------+-----------------+------------
+ 5433 |              25 |          0
+(1 row)
+
+
+##### 10:59:37.966  Summary
+Primary crashed at 10:59:32.135; replica promoted at 10:59:37.179; first write on it committed by 10:59:37.962.
+Writes were impossible for 5.0 s, from the crash to the end of pg_ctl promote; the promotion itself took 0.4 s.
+Port 5432 is stopped and port 5433 is now a primary with no replica. Next: "After the failover drill" in setup-replica.md.
