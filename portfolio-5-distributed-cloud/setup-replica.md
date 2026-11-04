@@ -93,7 +93,9 @@ Remove-Item Env:PGPASSWORD
 psql -X -w -h localhost -p 5432 -U replicator -d "dbname=replication replication=true" -c "IDENTIFY_SYSTEM;"
 ```
 
-Expected: one row with the system identifier, timeline 1 and the current WAL position. Load `PGPASSWORD` again afterwards.
+Expected: one row with the system identifier, timeline 1 and the current WAL position.
+
+**Keep `PGPASSWORD` unset for Steps 5 to 7.** libpq uses the `PGPASSWORD` environment variable before it looks in `pgpass.conf`. A `pg_basebackup` run from a shell that holds the `postgres` password would send that password for `replicator` and fail. A replica started from such a shell is worse: it inherits the variable and keeps retrying with the wrong password, logging `password authentication failed for user "replicator"` every 5 seconds. Load `PGPASSWORD` again at Step 8.
 
 ## Step 5: copy the primary with `pg_basebackup`
 
@@ -138,7 +140,10 @@ The copy also contains the primary's server logs from `data\log\`. They were del
 
 ## Step 7: start the replica
 
+From a shell without `PGPASSWORD` (see Step 4):
+
 ```
+Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
 pg_ctl -D C:\Users\USER\pg18-replica-5433 -l C:\Users\USER\pg18-replica-5433.log -w -t 60 start
 ```
 
@@ -153,6 +158,8 @@ started streaming WAL from primary at 2/2B000000 on timeline 1
 
 ## Step 8: check it
 
+Load `PGPASSWORD` again (see "Before you start"), then:
+
 ```
 psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/01_replication_status.sql
 ```
@@ -161,7 +168,7 @@ On the primary, `pg_stat_replication` shows `replica_5433 | streaming | async` a
 
 ## Day to day
 
-The replica is not a Windows service, so it does not start with Windows. After a restart or sign-out, start it again with the Step 7 command; it reconnects and catches up from the slot. Other commands:
+The replica is not a Windows service, so it does not start with Windows. After a restart or sign-out, start it again with the Step 7 commands (`PGPASSWORD` unset); it reconnects and catches up from the slot. Other commands:
 
 ```
 pg_ctl -D C:\Users\USER\pg18-replica-5433 status
@@ -183,3 +190,25 @@ psql -X -w -U postgres -h localhost -p 5432 -d postgres -c "SELECT pg_drop_repli
 ```
 
 Then repeat Steps 5 to 8. Steps 1 to 4 only need repeating if the role, `pg_hba.conf` or `pgpass.conf` were changed.
+
+## After the failover drill
+
+`tests/05_failover.ps1` crashes the primary and promotes the replica, so it ends with port 5432 stopped and port 5433 a stand-alone primary on timeline 2. These steps return to the normal layout: port 5432 the primary, port 5433 its replica. They were run twice on 4 November.
+
+1. **Start the primary's service again.** Stopping and starting a Windows service needs administrator rights, so run this from a PowerShell window opened with "Run as administrator", or accept the UAC prompt:
+
+   ```
+   Start-Process powershell.exe -ArgumentList '-NoProfile','-Command','Start-Service postgresql-x64-18' -Verb RunAs -Wait
+   ```
+
+   The server runs crash recovery (it was stopped with `-m immediate`) and comes back as a primary on timeline 1.
+
+2. **See the split brain** (optional, only reads), while both servers are up:
+
+   ```
+   psql -X -w -U postgres -h localhost -p 5432 -d proclus -v ON_ERROR_STOP=1 -f portfolio-5-distributed-cloud/tests/06_split_brain.sql
+   ```
+
+3. **Rebuild the replica from port 5432** with the commands under "Rebuilding the replica from nothing" above, then Steps 5 to 8. This throws away port 5433's timeline 2, including the refund written there during the drill.
+
+That choice suits a lab where port 5432 is the server every other script uses. In production the promoted server would stay the primary, because it holds the newest data, and the old primary would be turned into its replica instead. That can be done with a fresh `pg_basebackup` or, faster, with `pg_rewind`, which rewinds only the blocks that diverged. `pg_rewind` needs data checksums or `wal_log_hints`; this cluster has `data_checksums = on`.
