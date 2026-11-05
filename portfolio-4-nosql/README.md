@@ -196,3 +196,10 @@ The times are from the second run, which is the one in the log. Atlas M0 is a sh
 - **Aggregations on the larger data only.** `04_aggregations.js` needs the 227,895 entries from `03_indexes.js`, and reloading them takes four minutes. So instead of rerunning `03` first, it checks that the data is there and stops with a message if it is not. Because it only reads, it can be run any number of times.
 - **Atlas upgraded the cluster during the week.** The seed log of 30 October shows MongoDB 8.0.34, and the runs on 31 October printed 8.0.36. Atlas applies patch upgrades to M0 clusters itself. I first copied 8.0.34 into the headers of the 02 and 03 logs, then corrected them to the version the server printed. The Environment section records both versions.
 - **Error details.** `$jsonSchema` errors return a nested `errInfo`. A small function in the script follows it to the rule that failed and prints the rule's `description` from validators.json. The transfer validator combines `$jsonSchema` and `$expr`, so its errors start with an extra `$and` level, which the function skips.
+
+## References
+
+- MongoDB, Inc. *MongoDB Manual* (version 8.0): data modeling (embedding and referencing), schema validation with `$jsonSchema`, indexes (unique, partial and collation options), transactions, the aggregation pipeline (`$lookup`, `$setWindowFields`, `$dateTrunc`), explain results, and BSON types (Decimal128). https://www.mongodb.com/docs/manual/
+- MongoDB, Inc. *MongoDB Atlas Documentation* and *mongosh Documentation*. https://www.mongodb.com/docs/atlas/ and https://www.mongodb.com/docs/mongodb-shell/
+- Elmasri, R. and Navathe, S. B. (2016). *Fundamentals of Database Systems* (7th ed.). Pearson. Chapter on NoSQL databases and big data storage systems.
+- Central Bank of Nigeria (2013). *Circular on the Three-Tiered Know-Your-Customer (KYC) Requirements*. Used for the tier 1 to 3 model, as in Portfolio 1.

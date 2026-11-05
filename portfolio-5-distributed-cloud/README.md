@@ -256,3 +256,13 @@ What a managed service takes away: there is no superuser, no `pg_hba.conf` and n
 - **Writing to Portfolio 4's data.** The Atlas test adds a real funding, like the local test 02, rather than writing to a scratch collection. Running Portfolio 4's seed first would have wiped the larger data that its `04_aggregations.js` needs. Instead the script removes its own funding and audit entries from any earlier run, in one transaction, so every run starts from the same balance and Portfolio 4's other documents are untouched.
 - **Proving which member answered.** A read with `readPref('secondary')` does not say where it went. Its `explain()` does, in `serverInfo.host`, which the script compares with the members' states from `rs.status()`.
 
+## References
+
+- PostgreSQL Global Development Group. *PostgreSQL 18 Documentation*: chapter "High Availability, Load Balancing, and Replication" (log-shipping standby servers, streaming replication, replication slots, synchronous replication, failover, hot standby), the `pg_basebackup`, `pg_ctl` and `pg_rewind` reference pages, the replication and write-ahead log server settings (`synchronous_standby_names`, `synchronous_commit`), the `pg_stat_replication` and `pg_stat_wal_receiver` views, and the recovery control functions (`pg_wal_replay_pause`). https://www.postgresql.org/docs/18/high-availability.html
+- MongoDB, Inc. *MongoDB Manual* (version 8.0): replication, write concern, read preference, read concern and causal consistency. https://www.mongodb.com/docs/manual/replication/
+- MongoDB, Inc. *MongoDB Atlas Documentation*: free cluster (M0) limits. https://www.mongodb.com/docs/atlas/
+- Brewer, E. A. (2000). Towards robust distributed systems. Keynote at the *19th ACM Symposium on Principles of Distributed Computing (PODC)*, Portland, Oregon.
+- Gilbert, S. and Lynch, N. (2002). Brewer's conjecture and the feasibility of consistent, available, partition-tolerant web services. *ACM SIGACT News*, 33(2), 51-59.
+- Abadi, D. J. (2012). Consistency tradeoffs in modern distributed database system design: CAP is only part of the story. *Computer*, 45(2), 37-42.
+- Elmasri, R. and Navathe, S. B. (2016). *Fundamentals of Database Systems* (7th ed.). Pearson. Chapter on distributed database concepts.
+- Silberschatz, A., Korth, H. F. and Sudarshan, S. (2020). *Database System Concepts* (7th ed.). McGraw-Hill. Chapters on parallel and distributed storage and distributed transaction processing.
