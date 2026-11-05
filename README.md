@@ -12,9 +12,11 @@ Proclus is a simulated mobile wallet based in Lagos. Customers hold naira, pay m
 
 | Tool | Used for |
 | --- | --- |
-| PostgreSQL (Windows installer, with pgAdmin and `psql`) | Portfolios 1, 2, 3 and 5, local primary on port 5432 |
-| Second PostgreSQL instance on port 5433 | Portfolio 5 streaming replica and failover drill |
-| MongoDB Atlas free cluster, with Compass and `mongosh` | Portfolio 4, and the cloud replica-set evidence in Portfolio 5 |
+| PostgreSQL 18.6 (Windows installer, with `psql`) | Portfolios 1, 2, 3 and 5, local primary on port 5432, database `proclus` |
+| Second PostgreSQL 18.6 instance on port 5433 | Portfolio 5 streaming replica and failover drill |
+| MongoDB Atlas free (M0) cluster, MongoDB 8.0.36, with `mongosh` 2.12.0 | Portfolio 4, and the cloud replica-set evidence in Portfolio 5 |
+| Windows PowerShell | The runners that start two `psql` sessions at once (Portfolios 3 and 5) |
+| draw.io desktop | The Portfolio 1 ER diagram (`.drawio` source and PNG) |
 | Git and GitHub (private repo) | Progressive commit history as evidence |
 
 ## Portfolios
@@ -31,11 +33,32 @@ Proclus is a simulated mobile wallet based in Lagos. Customers hold naira, pay m
 
 1. Install PostgreSQL and connect to the Atlas cluster as described in [SETUP.md](SETUP.md).
 2. Copy `.env.example` to `.env` and fill in the PostgreSQL password and the Atlas connection string. `.env` is never committed.
-3. Create the `proclus` database (see SETUP.md), then run each portfolio's scripts in numbered order, following the "How to run" section of that portfolio's README.
+3. Create the `proclus` database (see SETUP.md), then run each portfolio's scripts in numbered order, following the "How to run" section of that portfolio's README. All commands run from the repo root.
+4. Run the portfolios in order, 1 to 5:
+   - **Portfolio 1:** `sql/01_schema.sql`, `02_sample_data.sql`, `03_constraint_tests.sql`.
+   - **Portfolio 2:** `sql/01_seed_large.sql`, then `02_queries.sql` (plans before), `03_indexes.sql`, and `02_queries.sql` again (plans after). The seed takes two to three minutes.
+   - **Portfolio 3:** `sql/01_commit_rollback.sql` and `02_savepoints.sql`, then the seven two-session scenarios with `run_two_sessions.ps1`.
+   - **Portfolio 4:** on Atlas with `mongosh`: `scripts/01_seed.js`, `02_crud.js`, `03_indexes.js` (about four minutes), then `04_aggregations.js`.
+   - **Portfolio 5:** build the port-5433 replica with `setup-replica.md`, then `tests/01` to `04`, the failover drill `05_failover.ps1` and `06_split_brain.sql`, rebuild the replica, and finally `07_atlas_replica_set.js` on Atlas.
+
+Every script starts from a known state (Portfolios 2, 3 and 5 rebuild the Portfolio 1 data first; Portfolio 4 re-seeds Atlas), so each one can be run again on its own.
+
+## Where the evidence is
+
+Each portfolio folder has the same layout: a `README.md` with Objective, Environment, How to run, What I did, Evidence, Analysis and Challenges; the scripts (`sql/`, `scripts/` or `tests/`); the captured terminal output in `logs/` (and query plans in Portfolio 2's `plans/`); and `screenshots/`, named `p<N>-<order>-<content>.png`. Each README's Evidence table links every log and screenshot with a sentence on what it shows. Portfolio 1's `case-study.md`, `erd/` and `normalisation.md`, Portfolio 2's `results/performance.md`, Portfolio 4's `comparison.md` and Portfolio 5's `setup-replica.md` and `config/` hold the longer write-ups.
 
 ## References
 
-- PostgreSQL Global Development Group. *PostgreSQL Documentation*. https://www.postgresql.org/docs/
-- MongoDB, Inc. *MongoDB Manual* and *MongoDB Atlas Documentation*. https://www.mongodb.com/docs/
+Each portfolio README lists the sources it used. Together:
 
-Further references are added as each portfolio uses them.
+- PostgreSQL Global Development Group. *PostgreSQL 18 Documentation*: constraints, identity columns and numeric types (Portfolio 1); indexes, `EXPLAIN`, planner statistics and window functions (Portfolio 2); concurrency control, MVCC, transaction isolation and explicit locking (Portfolio 3); high availability and replication, `pg_basebackup`, `pg_ctl`, `pg_rewind` and the replication settings and views (Portfolio 5). https://www.postgresql.org/docs/18/
+- MongoDB, Inc. *MongoDB Manual* (version 8.0): data modeling, schema validation, indexes, transactions, aggregation and explain (Portfolio 4); replication, write concern, read preference, read concern and causal consistency (Portfolio 5). https://www.mongodb.com/docs/manual/
+- MongoDB, Inc. *MongoDB Atlas Documentation* and *mongosh Documentation*. https://www.mongodb.com/docs/atlas/ and https://www.mongodb.com/docs/mongodb-shell/
+- Elmasri, R. and Navathe, S. B. (2016). *Fundamentals of Database Systems* (7th ed.). Pearson.
+- Silberschatz, A., Korth, H. F. and Sudarshan, S. (2020). *Database System Concepts* (7th ed.). McGraw-Hill.
+- Codd, E. F. (1972). Further normalization of the data base relational model. In R. Rustin (Ed.), *Data Base Systems* (pp. 33-64). Prentice-Hall.
+- Brewer, E. A. (2000). Towards robust distributed systems. Keynote at the *19th ACM Symposium on Principles of Distributed Computing (PODC)*, Portland, Oregon.
+- Gilbert, S. and Lynch, N. (2002). Brewer's conjecture and the feasibility of consistent, available, partition-tolerant web services. *ACM SIGACT News*, 33(2), 51-59.
+- Abadi, D. J. (2012). Consistency tradeoffs in modern distributed database system design: CAP is only part of the story. *Computer*, 45(2), 37-42.
+- Central Bank of Nigeria (2013). *Circular on the Three-Tiered Know-Your-Customer (KYC) Requirements*.
+- JGraph Ltd. *draw.io desktop*. https://github.com/jgraph/drawio-desktop
