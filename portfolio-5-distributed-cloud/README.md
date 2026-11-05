@@ -1,6 +1,6 @@
 # Portfolio 5: Distributed and cloud database exercise
 
-> In progress. Done: the local streaming replica and tests 01-04 (2 November), the failover drill, the split-brain check and the Atlas replica-set evidence (4 November). Still to come: the discussion and screenshots.
+> In progress. Done: the local streaming replica and tests 01-04 (2 November), the failover drill, the split-brain check and the Atlas replica-set evidence (4 November), and the discussion (5 November). Still to come: screenshots.
 
 ## Objective
 
@@ -70,6 +70,7 @@ This portfolio replicates the Proclus database: a local PostgreSQL primary strea
    - It repeats the local test 02 on Atlas: Chinedu Okafor funds wallet 1 with ₦50,000 as a multi-document transaction committed with `w: "majority"`.
    - It writes two audit entries, one with `w: 3` and one with `w: 4`.
    - It reads the balance from the primary, and the November statement from a secondary with `readConcern: "majority"` in a causally consistent session.
+10. **Wrote the discussion** at the end of the Analysis: synchronous against asynchronous replication for money, CAP and PACELC for Proclus, a sharding plan by `customer_id` with the Portfolio 2 queries sorted into single-shard and cross-shard, and how a managed cloud database would host it. Each part draws on the numbers from tests 02-07.
 
 ## Evidence
 
@@ -150,6 +151,87 @@ The Atlas cluster behind Portfolio 4 has had this set-up all along, managed by M
   - `w: 4` cannot be met with three data-bearing members, so the server says so: `UnsatisfiableWriteConcern`. The entry was stored on the primary anyway. A write-concern error reports that the acknowledgement failed; it does not undo the write. An application that simply retried would record the entry twice, so retries need an idempotent key, such as Proclus's unique `reference`.
 - **Reads choose their member.** `readPref('secondary')` sent the statement to `shard-00-00`, while the balance came from the primary. This is the local rule (statements from the replica, balances from the primary) applied per query instead of per connection string. A secondary can still be behind; `rs.status()` showed both about one second behind the primary. Reading the statement with `readConcern: "majority"`, in the same causally consistent session as the funding, made the secondary wait until it had applied that session's own write. So the customer's statement could not miss the top-up they had just made. The local replica offers no such guarantee; test 02 had to wait on WAL positions by hand.
 - **Failover is automatic.** If the primary stopped answering, the two secondaries would elect a new primary between themselves, with no `pg_ctl promote` and no person deciding. A majority is needed to elect, so a member cut off on its own cannot become a second primary: the split brain of test 06 cannot happen. The free M0 tier does not let me trigger a failover or add shards, so that part rests on the local drill and the discussion.
+
+### Synchronous or asynchronous replication for money
+
+With asynchronous replication, the primary tells the customer "transfer successful" before the replica has the transfer. If the primary is lost in that gap and the replica is promoted, the transfer is gone, although the customer saw it succeed. The sender may then spend the money again, and the receiver never gets it. The size of the gap is what this portfolio measured. In the failover drill it was 15.8 ms, so nothing was lost. During the load in test 04, the replica was up to 4,096 kB of WAL behind in replay (17,111 kB and 21,417 kB in the earlier runs), and WAL took up to 122 ms to reach its disk. A crash at those moments would lose whatever had not yet reached the replica.
+
+PostgreSQL can make the commit wait. With `synchronous_standby_names = 'replica_5433'`, a commit returns only once the standby has the WAL, at the level chosen by `synchronous_commit`:
+
+| `synchronous_commit` | The commit waits until the WAL is | What it protects against |
+| --- | --- | --- |
+| `local` | on the primary's disk only | A primary crash, but not losing the primary's disk |
+| `remote_write` | handed to the standby's operating system | A primary loss, unless the standby's machine also crashes |
+| `on` | on the standby's disk | Losing either server |
+| `remote_apply` | applied on the standby | The same, and a read on the standby right after the commit sees it |
+
+The cost is paid on every commit: one round trip to the standby. On one laptop that is almost nothing, but between data centres it is added to every transfer. The bigger cost is availability. With one synchronous standby, if the standby stops, every commit on the primary waits until it returns or someone changes the setting. Synchronous replication with a single standby turns a replica failure into an outage.
+
+For Proclus I would use synchronous replication for money, with two standbys and a quorum: `synchronous_standby_names = 'ANY 1 (replica_a, replica_b)'` and `synchronous_commit = on`. A commit then waits for either standby, so one slow or failed standby does not stop transfers. Any committed transfer is on at least two servers. This is the same rule as Atlas's `w: "majority"`: two of three. `remote_apply` is not needed, because balances are read from the primary anyway. Statements can stay on an ordinary asynchronous replica. `synchronous_commit` can also be set per transaction (`SET LOCAL synchronous_commit = local`), which suits batch jobs that can simply be run again, such as Portfolio 2's seed. Ordinary Proclus writes (transfers, payments, KYC changes, audit entries) keep the synchronous default.
+
+### CAP and PACELC for Proclus
+
+CAP is about a network partition: when servers cannot reach each other, a system must either refuse some requests (consistency) or answer them and risk different servers giving different answers (availability). Proclus does not need one answer for everything:
+
+- **Balances and transfers choose consistency.** A wallet must never be debited on two servers at once. Test 06 showed what happens when both sides stay available: port 5432 said Tunde's wallet held ₦305,000 and port 5433 said ₦290,000, with no automatic way to merge them. A refused transfer can be retried, but a double spend means money that has to be recovered from a customer. So during a partition, the side without the primary must refuse transfers. This is what Atlas does: a member cut off on its own cannot get a majority and so cannot become primary.
+- **Statements and history choose availability.** The replica keeps answering if it loses the primary. The statement may be a few seconds old, which is acceptable if the screen shows the time it is "as at".
+
+PACELC adds the normal case: **else**, with no partition, the trade-off is between latency and consistency. The tests measured both sides of that:
+
+| Choice | Example from this portfolio | Latency | Consistency |
+| --- | --- | --- | --- |
+| Read the primary | Balances (02, 07) | One server, no waiting | Always current |
+| Read the async replica | Statement in 02, part 2 | No extra wait | Can be stale: ₦152,549.50 against ₦134,549.50 |
+| Atlas secondary, `readConcern: "majority"` in a causal session | Statement in 07 | Waits for the secondary to catch up | Sees the session's own funding |
+| Async commit | Local primary today | Commit returns at once | Can lose the newest transfers in a failover |
+| Majority commit | Atlas funding in 07 | Waits for a second member | Survives losing any one member |
+
+In PACELC terms, Proclus should be PC/EC for money: refuse during a partition, and pay the commit wait the rest of the time. It can be PA/EL for statements. The design keeps both by sending each read to the right server, not by picking one setting for the whole database.
+
+### A sharding plan by customer ID
+
+One server holds Portfolio 2's million ledger rows easily, so this is a plan for growth, not something Proclus needs today. The shard key would be `customer_id`, hashed so that new customers spread across all shards instead of filling the newest one. Everything that belongs to one customer lives on that customer's shard:
+
+| Table | Where it lives | Change needed |
+| --- | --- | --- |
+| `customers`, `kyc_documents`, `beneficiaries`, `wallets` | The customer's shard | None: each already carries `customer_id` |
+| `transactions` | The wallet owner's shard | Add `customer_id`, copied from the wallet, so that the ledger can be routed without a join |
+| `transfers` | The sender's shard | Its credit leg in `transactions` lives on the receiver's shard |
+| `merchants` | A copy on every shard | Small (500 rows in Portfolio 2) and rarely changed, so merchant payments stay on one shard |
+| `audit_log` | The shard of the customer it concerns | Staff actions on a merchant go to a small central log |
+
+The Portfolio 2 queries then fall into three groups:
+
+- **One shard.** Q1 (statement) and Q5 (running balance) read one wallet. So do the balance check, KYC verification, saving a beneficiary, funding a wallet and paying a merchant. These are most of the traffic, and they scale with the number of shards.
+- **Every shard, then merged.** Q2 (monthly totals): each shard sums its own rows and a coordinator adds the partial sums. Q4 (inactive customers), Q6 (large senders) and Q7 (pending queue): each customer lives on one shard, so each shard can return its own top 20 or 25 and the coordinator takes the best of those. Q3 (top merchants) is the trap. A merchant is paid by customers on every shard, so a merchant who is 11th on every shard can be 1st overall. Each shard must return its total for every merchant, and only the coordinator applies `LIMIT 10`.
+- **Not routable.** Q8, the log-in look-up by email, has no `customer_id`, so it would have to ask every shard. Login is too frequent for that, so it needs a small global table from `lower(email)` (and phone number) to `customer_id`.
+
+What sharding breaks:
+
+- **Transfers between shards.** With 4 shards, two random customers are on different shards 3 times in 4. Debiting one shard and crediting another is no longer one PostgreSQL transaction. Two-phase commit (`PREPARE TRANSACTION`) can make it atomic, but a coordinator that fails between the two phases leaves both wallets locked. The other way uses the statuses the schema already has. Debit the sender and record the transfer as `pending` on the sender's shard. Credit the receiver on the other shard, keyed by the transfer's unique `reference` so a retry cannot credit twice. Then mark it `completed`, or credit the sender back and mark it `reversed` with a `failure_reason`. This is the case study's "reverse a failed transfer" operation, and Portfolio 2's Q7 queue is where stuck ones would show.
+- **Constraints across shards.** A `UNIQUE` index only checks its own shard, so unique email, phone number, BVN or NIN, `wallet_number` and `reference` all need the global look-up table or values that include the shard. The foreign keys from `transfers.receiver_wallet_id` and `beneficiaries.wallet_id` to another customer's wallet cannot be checked by the database, so the application must check them.
+- **Ids.** Each shard's identity columns would hand out the same numbers. Ids need a range per shard, or a shard number built into the id.
+
+### Hosting Proclus on a managed cloud database
+
+A managed PostgreSQL service (for example Amazon RDS for PostgreSQL, Azure Database for PostgreSQL or Google Cloud SQL), or Atlas on the MongoDB side, does most of what I did by hand:
+
+| What I did by hand | What the managed service does |
+| --- | --- |
+| Created `replicator`, edited `pg_hba.conf`, ran `pg_basebackup -R` with a slot | Adds a read replica on request |
+| Chose async, and would set `synchronous_standby_names` for money | Offers a high-availability standby in another availability zone, kept in sync, and separate async read replicas |
+| Crashed the primary, ran `pg_ctl promote`, and had to keep the old primary down myself (06) | Detects the failure, promotes the standby, moves the database's address to it and replaces the old server, so the application reconnects to the same name |
+| Rebuilt the replica after the drill | Rebuilds standbys and replicas itself |
+| Had no backups beyond the replica | Takes automated backups with point-in-time recovery, which the replica cannot give: a mistaken `DELETE` is replayed on every replica |
+
+For Proclus I would run:
+
+- **A primary with a synchronous standby in a second availability zone.** Transfers, payments, balances and KYC changes go here.
+- **One or two async read replicas.** Statements, monthly reports and the compliance queries (Portfolio 2's Q2, Q3 and Q6) go here, through the replicas' own address. The service publishes replica lag as a metric. If it passes a few seconds, the application sends statements to the primary, or labels them with their "as at" time.
+- **A replica in a second region**, for disaster recovery if the whole region fails. It is asynchronous, so a regional failover could lose the last few seconds of transfers. That should be a written decision, not a surprise.
+- **The application in the same region as the database.** Every synchronous commit pays the round trip to the standby, so the application should not add a long trip on top. The Atlas cluster is in Cape Town (`AF_SOUTH_1`). Nigerian rules on where customers' financial and personal data may be stored would have to be checked with the compliance officers before choosing a region.
+
+What a managed service takes away: there is no superuser, no `pg_hba.conf` and no `pg_ctl`. Access is set through the provider's network rules and parameter settings, and a failover is tested with the provider's "fail over" action rather than by crashing the server. A standby and each replica are full servers, paid for even though the standby serves no reads. When Proclus outgrows one primary, the same route continues: a managed distributed PostgreSQL service, or a sharded Atlas cluster (dedicated tiers only; M0 cannot shard), using the plan above.
 
 ## Challenges and decisions
 
