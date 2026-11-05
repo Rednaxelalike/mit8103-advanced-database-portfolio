@@ -193,7 +193,7 @@ Then repeat Steps 5 to 8. Steps 1 to 4 only need repeating if the role, `pg_hba.
 
 ## After the failover drill
 
-`tests/05_failover.ps1` crashes the primary and promotes the replica, so it ends with port 5432 stopped and port 5433 a stand-alone primary on timeline 2. These steps return to the normal layout: port 5432 the primary, port 5433 its replica. They were run twice on 4 November.
+`tests/05_failover.ps1` crashes the primary and promotes the replica, so it ends with port 5432 stopped and port 5433 a stand-alone primary on timeline 2. These steps return to the normal layout: port 5432 the primary, port 5433 its replica. They were run twice on 4 November and once on 5 November.
 
 1. **Start the primary's service again.** Stopping and starting a Windows service needs administrator rights, so run this from a PowerShell window opened with "Run as administrator", or accept the UAC prompt:
 
