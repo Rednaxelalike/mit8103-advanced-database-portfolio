@@ -17,7 +17,7 @@ Proclus is a simulated mobile wallet based in Lagos. Customers hold naira, pay m
 | MongoDB Atlas free (M0) cluster, MongoDB 8.0.36, with `mongosh` 2.12.0 | Portfolio 4, and the cloud replica-set evidence in Portfolio 5 |
 | Windows PowerShell | The runners that start two `psql` sessions at once (Portfolios 3 and 5) |
 | draw.io desktop | The Portfolio 1 ER diagram (`.drawio` source and PNG) |
-| Git and GitHub (private repo) | Progressive commit history as evidence |
+| Git and GitHub (public repo) | Progressive commit history as evidence |
 
 ## Portfolios
 
